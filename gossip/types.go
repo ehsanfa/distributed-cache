@@ -16,11 +16,33 @@ type Seeder Peer
 type PeerInfo struct {
 	Version   Version
 	IsAlive   bool
+	HasBuddy  bool
+	IsSomeonesBuddy bool
+}
+
+func NewPeerInfo() PeerInfo {
+	v := Version{1, 1}
+	return PeerInfo{Version: v, IsAlive: true, HasBuddy: false}
+}
+
+func (p *PeerInfo) touch() {
+	p.Version.touch()
 }
 
 type Peer struct{
 	Name      string
 	Port      Port
+}
+
+func (p *Peer) isKnown() bool {
+	if _, ok := getInfo(*p); !ok {
+		return false
+	}
+	return true
+}
+
+func (p *Peer) track(i PeerInfo) {
+	setInfo(*p, i)
 }
 
 type Node struct {
@@ -29,7 +51,7 @@ type Node struct {
 	Port         Port
 	buddy        Buddy
 	seeder       Seeder
-	noBuddyPeers map[Peer]bool
+	noBuddyPeers map[Peer]PeerInfo
 	buddyWith    []Peer
 	version      Version
 }
@@ -46,6 +68,18 @@ func (n *Node) getPeer() Peer {
 	return Peer{n.Name, n.Port}
 }
 
+func (n *Node) getPeerInfo() PeerInfo {
+	p := n.getPeer()
+	var i PeerInfo
+	if !p.isKnown() {
+		i = NewPeerInfo()
+		p.track(i)
+	} else {
+		i, _ = getInfo(p)
+	}
+	return i
+}
+
 func (n *Node) noBuddySlice() []Peer {
 	var ps []Peer
 	for peer, _ := range n.noBuddyPeers {
@@ -56,20 +90,10 @@ func (n *Node) noBuddySlice() []Peer {
 
 type Response struct {
 	Info      map[Peer]PeerInfo
-	BuddyLook []Peer
-	Version   Version
 }
 
 func (resp Response) GetInfo() map[Peer]PeerInfo {
 	return resp.Info
-}
-
-func (resp Response) GetVersion() Version {
-	return resp.Version
-}
-
-func (resp Response) GetBuddyLook() map[Peer]PeerInfo  {
-	return resp.BuddyLook
 }
 
 type PotentialBuddies []Peer
@@ -79,6 +103,4 @@ type BuddyRequestResp struct {
 
 type GossipMaterial interface {
 	GetInfo()      map[Peer]PeerInfo
-	GetVersion()   Version
-	GetBuddyLook() map[Peer]PeerInfo 
 }

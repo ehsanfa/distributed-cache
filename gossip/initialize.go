@@ -6,12 +6,12 @@ import (
 )
 
 func (n *Node) Initialize() {
-	info = make(map[Peer]bool)
+	info = make(map[Peer]PeerInfo)
 	buddyFound = make(chan bool)
 	if n.isSeeder {
 		n.newVersion()
 	}
-	n.noBuddyPeers = make(map[Peer]bool)
+	n.noBuddyPeers = make(map[Peer]PeerInfo)
 	thisNode = n
 	nodename, err := os.Hostname()
 	if err != nil {
@@ -22,10 +22,17 @@ func (n *Node) Initialize() {
 	// 	buddyNode := info[len(info)-1]
 	// 	n.buddy = Buddy{buddyNode.Name, buddyNode.Port}
 	// }
-	done := make(chan bool)
+	done := make(chan *Node)
 	go n.listen(done)
-	<-done
+	n = <-done
 	close(done)
+
+	en := Peer{n.Name, n.Port}
+	peerInfo := NewPeerInfo()
+	if n.isSeeder {
+		thisNode.noBuddyPeers[en] = peerInfo
+	}
+	setInfo(en, peerInfo)
 
 	if !n.isSeeder {
 		introduced := make(chan bool)
@@ -33,12 +40,7 @@ func (n *Node) Initialize() {
 		<-introduced
 		close(introduced)
 	}
-
-	en := Peer{n.Name, n.Port}
-	if n.isSeeder {
-		thisNode.noBuddyPeers[en] = true
-	}
-	info[en] = true
+	
 	<-buddyFound
 	fmt.Println("buddy found", thisNode.Name, thisNode.buddy)
 	n.gossip()

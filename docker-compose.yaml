@@ -87,7 +87,37 @@ services:
     depends_on:
       - server
 
-  # child_5:
+  child_5:
+    build:
+      dockerfile: .
+      context: .
+    volumes:
+      - ".:/go/src"
+    working_dir: "/go/src/cacher"
+    networks:
+      - gossip
+    environment:
+      - "SEEDER_PORT=7000"
+      - "SEEDER_NAME=server"
+    depends_on:
+      - server
+
+  child_6:
+    build:
+      dockerfile: .
+      context: .
+    volumes:
+      - ".:/go/src"
+    working_dir: "/go/src/cacher"
+    networks:
+      - gossip
+    environment:
+      - "SEEDER_PORT=7000"
+      - "SEEDER_NAME=server"
+    depends_on:
+      - server
+
+  # child_7:
   #   build:
   #     dockerfile: .
   #     context: .

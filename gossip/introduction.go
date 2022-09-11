@@ -4,7 +4,6 @@ import (
 	"fmt"
 )
 
-
 func (n *Node) introduce(ch chan<- bool) {
 	fmt.Println("introduction")
 	p := Peer(n.seeder)
@@ -16,18 +15,24 @@ func (n *Node) introduce(ch chan<- bool) {
 	peer := Peer{n.Name, n.Port}
 	c.Call("Node.Introduce", peer, &resp)
 	ch <- true
-	thisNode.checkForBuddies(resp.BuddyLook)
+	updateInfo(resp)
+	c.Call("Node.SwitchBuddies", peer, &resp)
+	thisNode.checkForBuddies()
 }
 
-func (n *Node) Introduce(node Peer, resp *Response) error {
-	thisNode.noBuddyPeers[node] = true
-	node.NewVersion()
-	updateInfo(node)
+func (n *Node) Introduce(peer Peer, resp *Response) error {
+	// node.NewVersion()
 	// if !thisNode.hasBuddy() {
 	// 	b := Buddy(node)
 	// 	thisNode.setBuddy(b)
 	// 	return nil
 	// }
-	*resp = Response{Info: info, BuddyLook: thisNode.noBuddySlice()}
+	i := NewPeerInfo()
+	thisNode.noBuddyPeers[peer] = i
+	peer.track(i)
+	*resp = Response{Info: info}
+	fmt.Println(resp)
+	fmt.Println(info, peer)
+	updateInfo(resp)
 	return nil
 }

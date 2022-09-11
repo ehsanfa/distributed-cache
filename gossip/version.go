@@ -33,6 +33,6 @@ func (n *Node) newVersion() {
 	n.version = v
 }
 
-func (n *Node) touch() {
-	n.version.increment()
+func (v *Version) touch() {
+	v.increment()
 }

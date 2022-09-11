@@ -10,17 +10,15 @@ import (
 
 const gossipInterval = 5 * time.Second
 
-var info map[Peer]PeerInfo
-
 var thisNode *Node
 
 type GossipRequest struct {
-	Info      []Peer
+	Info      map[Peer]PeerInfo
 	Version   Version
-	BuddyLook []Peer
+	BuddyLook map[Peer]PeerInfo
 }
 
-func (g GossipRequest) GetInfo() []Peer {
+func (g GossipRequest) GetInfo() map[Peer]PeerInfo {
 	return g.Info
 }
 
@@ -28,7 +26,7 @@ func (g GossipRequest) GetVersion() Version {
 	return g.Version
 }
 
-func (g GossipRequest) GetBuddyLook() []Peer {
+func (g GossipRequest) GetBuddyLook() map[Peer]PeerInfo {
 	return g.BuddyLook
 }
 
@@ -45,11 +43,17 @@ func (g GossipRequest) GetBuddyLook() []Peer {
 func (n *Node) gossip() {
 	timer := time.NewTicker(gossipInterval)
 	done := make(chan bool)
+	var peer Peer
 	go func() {
 		for {
+			if !n.hasBuddy() {
+				peer = Peer(n.seeder)
+			} else {
+				peer = Peer(n.buddy)
+			}
 			select {
 			case <-timer.C:
-				n.doGossip()
+				n.doGossip(peer)
 			case <-done:
 				break
 			}
@@ -57,59 +61,70 @@ func (n *Node) gossip() {
 	}()
 }
 
-func (n *Node) doGossip() {
-	p := Peer(n.buddy)
+func (n *Node) doGossip(p Peer) {
 	c, err := dial(p)
 	if err != nil {
 		panic(err)
 	}
 	var resp Response
+	fmt.Println("buddy report", thisNode.Name, thisNode.buddy.Name)
 	// TODO: Find a better way
-	var m []Peer
-	for peer, _ := range info {
-		m = append(m, peer)
-	}
-	gossipRequest := GossipRequest{m, n.version, thisNode.noBuddySlice()}
+	// var m []Peer
+	// for peer, _ := range info {
+	// 	m = append(m, peer)
+	// }
+	gossipRequest := GossipRequest{info, n.version, thisNode.noBuddyPeers}
 	// fmt.Println("sending gossip request to ", n.buddy.Name, info)
 	c.Call("Node.Gossip", gossipRequest, &resp)
 
-	fmt.Println("buddy lookup", resp.BuddyLook)
+	updateInfo(resp)
 
-	n.update(resp)
-
-	thisNode.checkForBuddies(thisNode.noBuddySlice())
+	thisNode.checkForBuddies()
 
 	fmt.Println("info", info, thisNode.buddy.Name)
 }
 
-func updateInfo(peer Peer) {
-
-}
-
-func (n *Node) update(g GossipMaterial) {
+func updateInfo(g GossipMaterial) {
 	/**
-	 * TODO: Find a better approach
-	 * 
-	*/
-	// if n.version.compare(g.GetVersion()) >= 0 {
-		for _, en := range g.GetInfo() {
-			info[en] = true
+	 * This is a mess. Come back later and fix it FGS
+	 */
+	for peer, peerInfo := range g.GetInfo() {
+
+		if _, ok := getInfo(peer); !ok {
+			peer.track(peerInfo)
+			continue
 		}
-		for _, peer := range g.GetBuddyLook() {
-			if peer == n.getPeer() && n.hasBuddy() {
-				delete(thisNode.noBuddyPeers, peer)
-				continue
-			}
-			if _, ok := thisNode.noBuddyPeers[peer]; !ok {
-				thisNode.noBuddyPeers[peer] = true
-			}
+
+		pi, _ := getInfo(peer)
+		if pi.Version.compare(peerInfo.Version) >= 0 {
+			// The message has nothing to give to us. Moving on
+			continue
 		}
-		n.version.replace(g.GetVersion())
-		// fmt.Println("updating from resp", g, info)
-	// }
+
+		fmt.Println("SURPRISE. UPDATING", peer, pi, peerInfo)
+
+		peer.track(peerInfo)
+
+	}
+	updateNoBuddyPeers(g)
 }
 
-func (n *Node) listen(done chan<- bool) {
+func updateNoBuddyPeers(g GossipMaterial) {
+	for peer, peerInfo := range g.GetInfo() {
+		switch peerInfo.IsSomeonesBuddy {
+		case true:
+			if _, ok := thisNode.noBuddyPeers[peer]; ok {
+				delete(thisNode.noBuddyPeers, peer)
+			}
+		case false:
+			if _, ok := thisNode.noBuddyPeers[peer]; !ok {
+				thisNode.noBuddyPeers[peer] = peerInfo
+			}
+		}
+	}
+}
+
+func (n *Node) listen(done chan<- *Node) {
 	node := new(Node)
     rpc.Register(node)
 
@@ -128,7 +143,7 @@ func (n *Node) listen(done chan<- bool) {
 	defer listener.Close()
 	
 	n.setPort(listener)
-	done <- true
+	done <- n
 	
 	for {
 		conn, err := listener.Accept()
@@ -151,15 +166,14 @@ func (n *Node) Gossip(req GossipRequest, resp *Response) error {
 	// if thisNode.isSeeder {
 		fmt.Println("nodes with no buddy", thisNode.noBuddyPeers)
 	// }
-	n.update(req)
-	if !thisNode.hasBuddy() {
-		thisNode.noBuddyPeers[thisNode.getPeer()] = true
-	}
-	thisNode.checkForBuddies(thisNode.noBuddySlice())
+	updateInfo(req)
+	// if !thisNode.hasBuddy() {
+	// 	// thisNode.touch()
+	// 	thisNode.noBuddyPeers[thisNode.getPeer()] = thisNode.getPeerInfo()
+	// }
+	thisNode.checkForBuddies()
 	*resp = Response{
 		Info: info, 
-		BuddyLook: thisNode.noBuddySlice(), 
-		Version: thisNode.version,
 	}
 	// fmt.Println("gossip result", resp)
 	return nil
