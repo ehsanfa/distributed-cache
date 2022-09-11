@@ -1,0 +1,107 @@
+version: '3'
+services:
+  client:
+    build:
+      dockerfile: .
+      context: .
+    volumes:
+      - ".:/go/src"
+    networks:
+      - seeds
+    environment:
+      - "SEED_SERVER=server:6399"
+    depends_on:
+      - server
+
+  server:
+    build:
+      dockerfile: .
+      context: .
+    volumes:
+      - ".:/go/src"
+    working_dir: "/go/src/cacher"
+    networks:
+      - seeds
+      - gossip
+    environment:
+      - "PORT=6399"
+      - "CLUSTER_PORT=7000"
+
+  child:
+    build:
+      dockerfile: .
+      context: .
+    volumes:
+      - ".:/go/src"
+    working_dir: "/go/src/cacher"
+    networks:
+      - gossip
+    environment:
+      - "SEEDER_PORT=7000"
+      - "SEEDER_NAME=server"
+    depends_on:
+      - server
+
+  child_2:
+    build:
+      dockerfile: .
+      context: .
+    volumes:
+      - ".:/go/src"
+    working_dir: "/go/src/cacher"
+    networks:
+      - gossip
+    environment:
+      - "SEEDER_PORT=7000"
+      - "SEEDER_NAME=server"
+    depends_on:
+      - server
+
+  child_3:
+    build:
+      dockerfile: .
+      context: .
+    volumes:
+      - ".:/go/src"
+    working_dir: "/go/src/cacher"
+    networks:
+      - gossip
+    environment:
+      - "SEEDER_PORT=7000"
+      - "SEEDER_NAME=server"
+    depends_on:
+      - server
+
+  child_4:
+    build:
+      dockerfile: .
+      context: .
+    volumes:
+      - ".:/go/src"
+    working_dir: "/go/src/cacher"
+    networks:
+      - gossip
+    environment:
+      - "SEEDER_PORT=7000"
+      - "SEEDER_NAME=server"
+    depends_on:
+      - server
+
+  # child_5:
+  #   build:
+  #     dockerfile: .
+  #     context: .
+  #   volumes:
+  #     - ".:/go/src"
+  #   working_dir: "/go/src/cacher"
+  #   networks:
+  #     - gossip
+  #   environment:
+  #     - "SEEDER_PORT=7000"
+  #     - "SEEDER_NAME=server"
+  #   depends_on:
+  #     - server
+
+networks:
+  seeds:
+  gossip:
