@@ -1,14 +1,8 @@
 package gossip
 
 import (
-	"fmt"
-	"net/rpc"
 	"strconv"
 )
-
-func dial(p Peer) (*rpc.Client, error) {
-	return rpc.Dial("tcp", fmt.Sprintf("%s:%s", p.Name, p.Port))
-}
 
 func CreateSeeder(name, port string) Seeder {
 	s := Seeder{}
@@ -19,5 +13,7 @@ func CreateSeeder(name, port string) Seeder {
 }
 
 func CreateNode(isSeeder bool) Node {
-	return Node{isSeeder: isSeeder}
+	p := Peer{}
+	buddies := make(map[Peer]bool)
+	return Node{isSeeder: isSeeder, Peer: &p, buddies: buddies}
 }

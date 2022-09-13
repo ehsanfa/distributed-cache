@@ -28,11 +28,6 @@ func (v1 *Version) compare(v2 Version) int8 {
 	return 0
 }
 
-func (n *Node) newVersion() {
-	v := Version{1, 1}
-	n.version = v
-}
-
 func (v *Version) touch() {
 	v.increment()
 }

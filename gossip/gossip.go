@@ -1,33 +1,35 @@
 package gossip
 
 import (
+	"os"
 	"fmt"
-	"log"
 	"time"
-	"net"
-	"net/rpc"
 )
 
 const gossipInterval = 5 * time.Second
+const gossipTimeout = 5 * time.Second
 
 var thisNode *Node
 
 type GossipRequest struct {
 	Info      map[Peer]PeerInfo
-	Version   Version
-	BuddyLook map[Peer]PeerInfo
 }
 
 func (g GossipRequest) GetInfo() map[Peer]PeerInfo {
 	return g.Info
 }
 
-func (g GossipRequest) GetVersion() Version {
-	return g.Version
-}
-
-func (g GossipRequest) GetBuddyLook() map[Peer]PeerInfo {
-	return g.BuddyLook
+func (n *Node) peersToGossip() map[Peer]bool {
+	peers := make(map[Peer]bool)
+	if !n.hasBuddy() {
+		if n.isSeeder {
+			return peers
+		}
+		peers[n.getSeeder().getPeer()] = true
+	} else {
+		peers = n.getBuddies()
+	}
+	return peers
 }
 
 /*
@@ -40,20 +42,14 @@ func (g GossipRequest) GetBuddyLook() map[Peer]PeerInfo {
  - There should be max limit on how many buddies a node can have
 */
 
-func (n *Node) gossip() {
+func (n *Node) startGossiping() {
 	timer := time.NewTicker(gossipInterval)
 	done := make(chan bool)
-	var peer Peer
 	go func() {
 		for {
-			if !n.hasBuddy() {
-				peer = Peer(n.seeder)
-			} else {
-				peer = Peer(n.buddy)
-			}
 			select {
 			case <-timer.C:
-				n.doGossip(peer)
+				n.spawnToGossip()
 			case <-done:
 				break
 			}
@@ -61,32 +57,45 @@ func (n *Node) gossip() {
 	}()
 }
 
-func (n *Node) doGossip(p Peer) {
-	c, err := dial(p)
+func (n *Node) spawnToGossip() {
+	for peer, _ := range n.peersToGossip() {
+		go n.doGossip(peer)
+	}
+}
+
+func (n *Node) doGossip(p Peer) error{
+	/**
+	 * REFACTOR !!
+	 * Also, please be less harsh. Give them more chance!
+	 */
+	fmt.Println("doing gossip with ", n.getBuddies(), p)
+	c, err := n.dial(p)
 	if err != nil {
-		panic(err)
+		n.unbuddy(p)
+		fmt.Println("unbuddiying from ", p)
+		return err
 	}
 	var resp Response
-	fmt.Println("buddy report", thisNode.Name, thisNode.buddy.Name)
-	// TODO: Find a better way
-	// var m []Peer
-	// for peer, _ := range info {
-	// 	m = append(m, peer)
-	// }
-	gossipRequest := GossipRequest{info, n.version, thisNode.noBuddyPeers}
-	// fmt.Println("sending gossip request to ", n.buddy.Name, info)
-	c.Call("Node.Gossip", gossipRequest, &resp)
-
+	gossipRequest := GossipRequest{info}
+	timer := time.NewTimer(gossipTimeout)
+	call := c.Go("Node.Gossip", gossipRequest, &resp, nil)
+	select{
+	case <-call.Done:
+		timer.Stop()
+	case <-timer.C:
+		n.unbuddy(p)
+		return nil
+	}
 	updateInfo(resp)
+	n.checkForBuddies()
 
-	thisNode.checkForBuddies()
-
-	fmt.Println("info", info, thisNode.buddy.Name)
+	fmt.Println("info", info, n.buddies)
+	return nil
 }
 
 func updateInfo(g GossipMaterial) {
 	/**
-	 * This is a mess. Come back later and fix it FGS
+	 * This is a mess. Come back later and fix it
 	 */
 	for peer, peerInfo := range g.GetInfo() {
 
@@ -106,75 +115,22 @@ func updateInfo(g GossipMaterial) {
 		peer.track(peerInfo)
 
 	}
-	updateNoBuddyPeers(g)
 }
 
-func updateNoBuddyPeers(g GossipMaterial) {
-	for peer, peerInfo := range g.GetInfo() {
-		switch peerInfo.IsSomeonesBuddy {
-		case true:
-			if _, ok := thisNode.noBuddyPeers[peer]; ok {
-				delete(thisNode.noBuddyPeers, peer)
-			}
-		case false:
-			if _, ok := thisNode.noBuddyPeers[peer]; !ok {
-				thisNode.noBuddyPeers[peer] = peerInfo
-			}
-		}
-	}
-}
-
-func (n *Node) listen(done chan<- *Node) {
-	node := new(Node)
-    rpc.Register(node)
-
-    var listener net.Listener
-    var err error
-
-    if n.isSeeder {
-    	listener, err = net.Listen("tcp", "0.0.0.0:7000")
-    } else {
-    	listener, err = net.Listen("tcp", "0.0.0.0:")
-    }
-	
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer listener.Close()
-	
-	n.setPort(listener)
-	done <- n
-	
-	for {
-		conn, err := listener.Accept()
-		if err != nil {
-			log.Print(err)
-			continue
-		}
-		go rpc.ServeConn(conn)
-	}
-}
+var counter int = 0
 
 func (n *Node) Gossip(req GossipRequest, resp *Response) error {
-	/**
-	 * TODO: change the way buddy is chosen
-	 * */
-	// if !thisNode.hasBuddy() {
-	// 	buddyNode := Buddy{node.Name, node.Port}
-	// 	thisNode.buddy = buddyNode
-	// }
-	// if thisNode.isSeeder {
-		fmt.Println("nodes with no buddy", thisNode.noBuddyPeers)
-	// }
+	counter++
+	if counter > 3 {
+		val, isDead := os.LookupEnv("DEAD")
+		if isDead && val == "yes" {
+			fmt.Println("simulating death")
+			time.Sleep(60 * time.Second)
+		}
+	}
 	updateInfo(req)
-	// if !thisNode.hasBuddy() {
-	// 	// thisNode.touch()
-	// 	thisNode.noBuddyPeers[thisNode.getPeer()] = thisNode.getPeerInfo()
-	// }
-	thisNode.checkForBuddies()
 	*resp = Response{
 		Info: info, 
 	}
-	// fmt.Println("gossip result", resp)
 	return nil
 }

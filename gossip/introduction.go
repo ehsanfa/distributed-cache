@@ -4,35 +4,22 @@ import (
 	"fmt"
 )
 
-func (n *Node) introduce(ch chan<- bool) {
+func (n *Node) introduce() {
 	fmt.Println("introduction")
-	p := Peer(n.seeder)
-	c, err := dial(p)
+	p := n.getSeeder().getPeer()
+	c, err := n.dial(p)
 	if err != nil {
 		panic(err)
 	}
 	var resp Response
-	peer := Peer{n.Name, n.Port}
-	c.Call("Node.Introduce", peer, &resp)
-	ch <- true
+	c.Call("Node.Introduce", n.getPeer(), &resp)
 	updateInfo(resp)
-	c.Call("Node.SwitchBuddies", peer, &resp)
-	thisNode.checkForBuddies()
 }
 
 func (n *Node) Introduce(peer Peer, resp *Response) error {
-	// node.NewVersion()
-	// if !thisNode.hasBuddy() {
-	// 	b := Buddy(node)
-	// 	thisNode.setBuddy(b)
-	// 	return nil
-	// }
 	i := NewPeerInfo()
-	thisNode.noBuddyPeers[peer] = i
 	peer.track(i)
+	thisNode.checkForBuddies()
 	*resp = Response{Info: info}
-	fmt.Println(resp)
-	fmt.Println(info, peer)
-	updateInfo(resp)
 	return nil
 }

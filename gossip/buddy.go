@@ -2,42 +2,50 @@ package gossip
 
 import (
 	"fmt"
-	"sync"
 )
 
-const maxBuddyNum int = 1
+const maxBuddyNum int = 2
 
-type Buddy Peer
-
-func (n *Node) setBuddy(b Buddy) {
-	fmt.Printf("%s became buddy with %s \n", n.Name, b.Name)
-	n.buddy = b
-	peer := Peer(b)
-	i, _ := getInfo(peer)
-	i.touch()
-	i.IsSomeonesBuddy = true
-	// n.noBuddyPeers[peer] = i
-	peer.track(i)
-	// fmt.Println("info for the buddy", peer, i, info)
-	buddyFound <- true
+func (n *Node) addBuddy(b Peer) {
+	n.mu.Lock()
+	n.buddies[b] = true
+	n.mu.Unlock()
 }
 
-var buddyFound chan bool
+func (n *Node) getBuddies() map[Peer]bool {
+	return n.buddies
+}
+
+func (n *Node) buddyCount() int {
+	return len(n.buddies)
+}
 
 func (n *Node) hasBuddy() bool {
-	if n.buddy == (Buddy{}) {
+	return n.buddyCount() > 0
+}
+
+func (n *Node) isBuddyWith(peer Peer) bool {
+	for p, _ := range n.buddies {
+		if p == peer {
+			return true
+		}
+	}
+	return false
+}
+
+func (n *Node) canAcceptBuddyRequest(peer Peer) bool {
+	if n.isBuddyWith(peer) {
 		return false
 	}
 	return true
 }
 
-var retry int8
-
 func (n *Node) checkForBuddies() {
-	// fmt.Println("checking for buddies", n.hasBuddy(), n.noBuddyPeers)
-	if !n.hasBuddy(){
-		for peer, _ := range n.noBuddyPeers {
-			if peer == (Peer{thisNode.Name, thisNode.Port}) {
+	peers := getInfoList()
+	if n.buddyCount() < maxBuddyNum {
+		for _, peer := range peers {
+			thisPeer := n.getPeer()
+			if peer.isSame(*thisPeer) || !peer.isAlive() || n.isBuddyWith(peer) {
 				continue
 			}
 			fmt.Println("buddy request", peer)
@@ -48,40 +56,26 @@ func (n *Node) checkForBuddies() {
 	}
 }
 
-var mu sync.Mutex
-
 func (n *Node) BuddyRequest(peer Peer, resp *BuddyRequestResp) error {
-	*resp = BuddyRequestResp{}
-	mu.Lock()
-	defer mu.Unlock()
-	isBuddyWith := false
-	for _, p := range thisNode.buddyWith {
-		if p == thisNode.getPeer() {
-			isBuddyWith = true
-		}
-	}
-	fmt.Println("is already buddy with", thisNode.Name, peer.Name, isBuddyWith)
+	*resp = BuddyRequestResp{true}
 
-	if len(thisNode.buddyWith) < maxBuddyNum && !isBuddyWith{
-		thisNode.buddyWith = append(thisNode.buddyWith, peer)
-		resp.Res = true
-	} else {
+	if !thisNode.canAcceptBuddyRequest(peer) {
 		resp.Res = false
 	}
+
 	return nil
 }
 
 func (n *Node) becomeBuddies(peer Peer) bool {
-	c, err := dial(peer)
+	c, err := n.dial(peer)
 	if err != nil {
 		panic(err)
 	}
 	var resp BuddyRequestResp
-	p := Peer{thisNode.Name, thisNode.Port}
+	p := n.getPeer()
 	c.Call("Node.BuddyRequest", p, &resp)
 	if resp.Res {
-		thisNode.setBuddy(Buddy(peer))
-		fmt.Println("touching node")
+		thisNode.addBuddy(peer)
 		return true
 	}
 	return false
