@@ -1,4 +1,4 @@
-package gossip
+package cluster
 
 import (
 	"fmt"

@@ -12,6 +12,7 @@ func main() {
 	if err != nil {
         log.Fatal("dialing:", err)
     }
+    defer client.Close()
 
     
     var resp types.Resp

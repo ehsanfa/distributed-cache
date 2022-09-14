@@ -1,9 +1,10 @@
-package gossip
+package cluster
 
 import (
 	"os"
 	"fmt"
 	"time"
+	"runtime"
 )
 
 const gossipInterval = 5 * time.Second
@@ -42,7 +43,7 @@ func (n *Node) peersToGossip() map[Peer]bool {
  - There should be max limit on how many buddies a node can have
 */
 
-func (n *Node) startGossiping() {
+func (n *Node) startGossiping(endSignal chan<- bool) {
 	timer := time.NewTicker(gossipInterval)
 	done := make(chan bool)
 	go func() {
@@ -51,6 +52,7 @@ func (n *Node) startGossiping() {
 			case <-timer.C:
 				n.spawnToGossip()
 			case <-done:
+				endSignal <- true
 				break
 			}
 		}
@@ -64,6 +66,7 @@ func (n *Node) spawnToGossip() {
 }
 
 func (n *Node) doGossip(p Peer) error{
+	fmt.Println("goroutine counter", runtime.NumGoroutine())
 	/**
 	 * REFACTOR !!
 	 * Also, please be less harsh. Give them more chance!
@@ -75,6 +78,8 @@ func (n *Node) doGossip(p Peer) error{
 		fmt.Println("unbuddiying from ", p)
 		return err
 	}
+	defer c.Close()
+
 	var resp Response
 	gossipRequest := GossipRequest{info}
 	timer := time.NewTimer(gossipTimeout)
@@ -86,6 +91,7 @@ func (n *Node) doGossip(p Peer) error{
 		n.unbuddy(p)
 		return nil
 	}
+	
 	updateInfo(resp)
 	n.checkForBuddies()
 

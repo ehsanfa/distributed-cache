@@ -1,4 +1,4 @@
-package gossip
+package cluster
 
 import (
 	"fmt"
@@ -9,19 +9,6 @@ import (
 
 func (n *Node) dial(p Peer) (*rpc.Client, error) {
 	return rpc.Dial("tcp", fmt.Sprintf("%s:%s", p.Name, p.Port))
-	// if n.connections == nil {
-	// 	n.connections = make(map[Peer]*rpc.Client)
-	// }
-
-	// if _, ok := n.connections[p]; !ok {
-	// 	conn, err := rpc.Dial("tcp", fmt.Sprintf("%s:%s", p.Name, p.Port))
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
-	// 	// n.connections[p] = conn
-	// }
-
-	// return n.connections[p], nil
 }
 
 func (n *Node) listen(done chan<- *Node) {

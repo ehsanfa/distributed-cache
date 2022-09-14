@@ -1,4 +1,4 @@
-package gossip
+package cluster
 
 type Version struct {
 	Number uint64

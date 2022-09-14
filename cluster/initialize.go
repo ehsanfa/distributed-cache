@@ -1,4 +1,4 @@
-package gossip
+package cluster
 
 import (
 	"os"
@@ -34,6 +34,7 @@ func (n *Node) Initialize() {
 	}
 
 	// time.Sleep(time.Second * 5)
-
-	n.startGossiping()
+	endSignal := make(chan bool)
+	n.startGossiping(endSignal)
+	<-endSignal
 }

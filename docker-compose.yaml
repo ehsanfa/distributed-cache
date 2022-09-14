@@ -1,17 +1,17 @@
 version: '3'
 services:
-  client:
-    build:
-      dockerfile: .
-      context: .
-    volumes:
-      - ".:/go/src"
-    networks:
-      - seeds
-    environment:
-      - "SEED_SERVER=server:6399"
-    depends_on:
-      - server
+  # client:
+  #   build:
+  #     dockerfile: .
+  #     context: .
+  #   volumes:
+  #     - ".:/go/src"
+  #   networks:
+  #     - seeds
+  #   environment:
+  #     - "SEED_SERVER=server:6399"
+  #   depends_on:
+  #     - server
 
   server:
     build:
@@ -54,7 +54,7 @@ services:
     environment:
       - "SEEDER_PORT=7000"
       - "SEEDER_NAME=server"
-      - "DEAD=yes"
+      # - "DEAD=yes"
     depends_on:
       - server
 

@@ -1,4 +1,4 @@
-package gossip
+package cluster
 
 func (p *Peer) markAsDead() {
 	i, ok := getInfo(*p)

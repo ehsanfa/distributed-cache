@@ -1,4 +1,4 @@
-package gossip
+package cluster
 
 import (
 	"fmt"
@@ -71,6 +71,7 @@ func (n *Node) becomeBuddies(peer Peer) bool {
 	if err != nil {
 		panic(err)
 	}
+	defer c.Close()
 	var resp BuddyRequestResp
 	p := n.getPeer()
 	c.Call("Node.BuddyRequest", p, &resp)
