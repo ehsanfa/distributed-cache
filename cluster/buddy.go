@@ -5,6 +5,7 @@ import (
 )
 
 const maxBuddyNum int = 2
+var alreadyRequested map[Peer]bool
 
 func (n *Node) addBuddy(b Peer) {
 	n.mu.Lock()
@@ -44,8 +45,9 @@ func (n *Node) checkForBuddies() {
 	peers := getInfoList()
 	if n.buddyCount() < maxBuddyNum {
 		for _, peer := range peers {
+			_, ar := alreadyRequested[peer]
 			thisPeer := n.getPeer()
-			if peer.isSame(*thisPeer) || !peer.isAlive() || n.isBuddyWith(peer) {
+			if peer.isSame(*thisPeer) || !peer.isAlive() || n.isBuddyWith(peer) || ar {
 				continue
 			}
 			fmt.Println("buddy request", peer)
@@ -66,10 +68,25 @@ func (n *Node) BuddyRequest(peer Peer, resp *BuddyRequestResp) error {
 	return nil
 }
 
-func (n *Node) becomeBuddies(peer Peer) bool {
+func (n *Node) askForCache(peer Peer) {
 	c, err := n.dial(peer)
 	if err != nil {
 		panic(err)
+	}
+	defer c.Close()
+	var resp ShareCacheResposne
+	req := ShareCacheRequest{}
+	c.Call("Node.ShareCache", req, &resp)
+	if len(resp.Cache) > 0 {
+		thisNode.cache = resp.Cache
+	}
+}
+
+func (n *Node) becomeBuddies(peer Peer) bool {
+	c, err := n.dial(peer)
+	if err != nil {
+		fmt.Println(err)
+		return false
 	}
 	defer c.Close()
 	var resp BuddyRequestResp
@@ -77,7 +94,13 @@ func (n *Node) becomeBuddies(peer Peer) bool {
 	c.Call("Node.BuddyRequest", p, &resp)
 	if resp.Res {
 		thisNode.addBuddy(peer)
+		thisNode.askForCache(peer)
+		fmt.Println("became buddy with", n.getPeer(), peer)
 		return true
 	}
+	if alreadyRequested == nil {
+		alreadyRequested = make(map[Peer]bool)
+	}
+	alreadyRequested[peer] = true
 	return false
 }

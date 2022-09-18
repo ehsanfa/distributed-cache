@@ -7,7 +7,7 @@ import (
 	"runtime"
 )
 
-const gossipInterval = 5 * time.Second
+const gossipInterval = 1 * time.Second
 const gossipTimeout = 5 * time.Second
 
 var thisNode *Node
@@ -65,14 +65,17 @@ func (n *Node) spawnToGossip() {
 	}
 }
 
+var alreadyPushed bool
+var counter int = 0
+
 func (n *Node) doGossip(p Peer) error{
 	fmt.Println("goroutine counter", runtime.NumGoroutine())
 	/**
 	 * REFACTOR !!
 	 * Also, please be less harsh. Give them more chance!
 	 */
-	fmt.Println("doing gossip with ", n.getBuddies(), p)
-	c, err := n.dial(p)
+	// fmt.Println("doing gossip with ", n.getBuddies(), p)
+	c, err := n.getConnection(p)
 	if err != nil {
 		n.unbuddy(p)
 		fmt.Println("unbuddiying from ", p)
@@ -91,11 +94,24 @@ func (n *Node) doGossip(p Peer) error{
 		n.unbuddy(p)
 		return nil
 	}
-	
+
+	counter++
+
+	if _, ok := os.LookupEnv("IS_SENDER"); ok && !alreadyPushed{
+		var cacheResp CacheResponse
+		cacheRequestPut := CacheRequest{Action: 2, Key: "hasan", Value: "mammad"}
+		e := c.Call("Node.Put", cacheRequestPut, &cacheResp)
+		fmt.Println(e)
+		// cacheRequestGet := CacheRequest{Action: 1, Key: "hasan"}
+		// c.Call("Node.Get", cacheRequestGet, &cacheResp)
+		alreadyPushed = true
+	}
+	// fmt.Println("cache", n.cache)
+
 	updateInfo(resp)
 	n.checkForBuddies()
 
-	fmt.Println("info", info, n.buddies)
+	// fmt.Println("info", info, assignedPartitions)
 	return nil
 }
 
@@ -107,6 +123,7 @@ func updateInfo(g GossipMaterial) {
 
 		if _, ok := getInfo(peer); !ok {
 			peer.track(peerInfo)
+			updatePartitionsInfo(peer, peerInfo)
 			continue
 		}
 
@@ -118,12 +135,18 @@ func updateInfo(g GossipMaterial) {
 
 		fmt.Println("SURPRISE. UPDATING", peer, pi, peerInfo)
 
+		updatePartitionsInfo(peer, peerInfo)
+
 		peer.track(peerInfo)
 
 	}
 }
 
-var counter int = 0
+func updatePartitionsInfo(peer Peer, peerInfo PeerInfo) {
+	if peer.isAlive() && peer.hasPartition(peerInfo) {
+		addToParitionsInfo(peer, peerInfo)
+	}
+}
 
 func (n *Node) Gossip(req GossipRequest, resp *Response) error {
 	counter++

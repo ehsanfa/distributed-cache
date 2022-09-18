@@ -4,10 +4,13 @@ import (
 	"os"
 	// "fmt"
 	// "time"
+	"net/rpc"
 )
 
 func (n *Node) Initialize() {
 	info = make(map[Peer]PeerInfo)
+	n.cache = make(map[string]string)
+	n.connections = make(map[Peer]*rpc.Client)
 
 	thisNode = n
 

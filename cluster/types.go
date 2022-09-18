@@ -5,6 +5,7 @@ import (
 	"net"
 	"net/rpc"
 	"sync"
+	partition "dbcache/partitioning"
 )
 
 type Port uint16
@@ -22,6 +23,7 @@ func (s Seeder) getPeer() Peer {
 type PeerInfo struct {
 	Version   Version
 	IsAlive   bool
+	Partition partition.Partition
 }
 
 func NewPeerInfo() PeerInfo {
@@ -58,6 +60,13 @@ func (p *Peer) isAlive() bool {
 	return true
 }
 
+func (p *Peer) hasPartition(pi PeerInfo) bool {
+	if pi.Partition == (partition.Partition{}) {
+		return false
+	}
+	return true
+}
+
 func (p *Peer) track(i PeerInfo) {
 	setInfo(*p, i)
 }
@@ -76,9 +85,12 @@ func (p *Peer) isSame(other Peer) bool {
 
 type Node struct {
 	connections  map[Peer]*rpc.Client
+	partitions   []partition.Partition    
+	partition    partition.Partition
 	isSeeder     bool
 	buddies      map[Peer]bool
 	seeder       Seeder
+	cache        map[string]string
 	Peer         *Peer
 	mu           sync.RWMutex
 }
@@ -117,6 +129,8 @@ func (n *Node) setName(name string) {
 
 type Response struct {
 	Info      map[Peer]PeerInfo
+	Cache     map[string]string
+	Partition partition.Partition
 }
 
 func (resp Response) GetInfo() map[Peer]PeerInfo {

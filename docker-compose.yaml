@@ -9,17 +9,18 @@ services:
   #   networks:
   #     - seeds
   #   environment:
-  #     - "SEED_SERVER=server:6399"
+  #     - "SEED_seeder=seeder:6399"
   #   depends_on:
-  #     - server
+  #     - seeder
 
-  server:
-    build:
-      dockerfile: .
-      context: .
+  seeder:
+    image: golang:latest
+    deploy:
+      replicas: 3
     volumes:
-      - ".:/go/src"
-    working_dir: "/go/src/cacher"
+      - "cacher:/go/src"
+    command: "go run node.go"
+    working_dir: "/go/src"
     networks:
       - seeds
       - gossip
@@ -27,112 +28,42 @@ services:
       - "PORT=6399"
       - "CLUSTER_PORT=7000"
 
+  request_handler:
+    image: golang:latest
+    volumes:
+      - "cacher:/go/src"
+    working_dir: "/go/src"
+    command: "go run request_handler.go"
+    depends_on:
+      - seeder
+    networks:
+      - seeds
+      - gossip
+
   child:
-    build:
-      dockerfile: .
-      context: .
+    image: golang:latest
+    deploy:
+      replicas: 25
     volumes:
-      - ".:/go/src"
-    working_dir: "/go/src/cacher"
+      - "cacher:/go/src"
+    command: "go run node.go"
+    working_dir: "/go/src"
     networks:
       - gossip
     environment:
       - "SEEDER_PORT=7000"
-      - "SEEDER_NAME=server"
+      - "SEEDER_NAME=seeder"
     depends_on:
-      - server
-
-  child_2:
-    build:
-      dockerfile: .
-      context: .
-    volumes:
-      - ".:/go/src"
-    working_dir: "/go/src/cacher"
-    networks:
-      - gossip
-    environment:
-      - "SEEDER_PORT=7000"
-      - "SEEDER_NAME=server"
-      # - "DEAD=yes"
-    depends_on:
-      - server
-
-  # child_3:
-  #   build:
-  #     dockerfile: .
-  #     context: .
-  #   volumes:
-  #     - ".:/go/src"
-  #   working_dir: "/go/src/cacher"
-  #   networks:
-  #     - gossip
-  #   environment:
-  #     - "SEEDER_PORT=7000"
-  #     - "SEEDER_NAME=server"
-  #   depends_on:
-  #     - server
-
-  # child_4:
-  #   build:
-  #     dockerfile: .
-  #     context: .
-  #   volumes:
-  #     - ".:/go/src"
-  #   working_dir: "/go/src/cacher"
-  #   networks:
-  #     - gossip
-  #   environment:
-  #     - "SEEDER_PORT=7000"
-  #     - "SEEDER_NAME=server"
-  #   depends_on:
-  #     - server
-
-  # child_5:
-  #   build:
-  #     dockerfile: .
-  #     context: .
-  #   volumes:
-  #     - ".:/go/src"
-  #   working_dir: "/go/src/cacher"
-  #   networks:
-  #     - gossip
-  #   environment:
-  #     - "SEEDER_PORT=7000"
-  #     - "SEEDER_NAME=server"
-  #   depends_on:
-  #     - server
-
-  # child_6:
-  #   build:
-  #     dockerfile: .
-  #     context: .
-  #   volumes:
-  #     - ".:/go/src"
-  #   working_dir: "/go/src/cacher"
-  #   networks:
-  #     - gossip
-  #   environment:
-  #     - "SEEDER_PORT=7000"
-  #     - "SEEDER_NAME=server"
-  #   depends_on:
-  #     - server
-
-  # child_7:
-  #   build:
-  #     dockerfile: .
-  #     context: .
-  #   volumes:
-  #     - ".:/go/src"
-  #   working_dir: "/go/src/cacher"
-  #   networks:
-  #     - gossip
-  #   environment:
-  #     - "SEEDER_PORT=7000"
-  #     - "SEEDER_NAME=server"
-  #   depends_on:
-  #     - server
+      - seeder
 
 networks:
   seeds:
   gossip:
+
+volumes:
+  cacher:
+    driver: local
+    driver_opts:
+      o: bind
+      type: none
+      device: /Users/ehsanfazeli/Projects/distributed-cache
