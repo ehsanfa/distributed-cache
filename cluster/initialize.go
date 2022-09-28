@@ -7,7 +7,7 @@ import (
 	"net/rpc"
 )
 
-func (n *Node) Initialize() {
+func (n *Node) Initialize(endSignal chan bool) {
 	info = make(map[Peer]PeerInfo)
 	n.cache = make(map[string]string)
 	n.connections = make(map[Peer]*rpc.Client)
@@ -37,7 +37,5 @@ func (n *Node) Initialize() {
 	}
 
 	// time.Sleep(time.Second * 5)
-	endSignal := make(chan bool)
-	n.startGossiping(endSignal)
-	<-endSignal
+	go n.startGossiping(endSignal)
 }

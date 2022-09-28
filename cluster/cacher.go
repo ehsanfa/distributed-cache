@@ -80,7 +80,7 @@ func (n *Node) Put(req CacheRequest, resp *CacheResponse) error {
 		req.AlreadyAware = make(map[Peer]bool)
 	}
 	req.AlreadyAware[*thisNode.getPeer()] = true
-	thisNode.shareWithPeers(req)
+	// thisNode.shareWithPeers(req)
 	*resp = CacheResponse{true, req.Key, ""}
 	return nil
 }

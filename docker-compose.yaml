@@ -43,7 +43,7 @@ services:
   child:
     image: golang:latest
     deploy:
-      replicas: 25
+      replicas: 3
     volumes:
       - "cacher:/go/src"
     command: "go run node.go"

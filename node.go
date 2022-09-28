@@ -18,5 +18,8 @@ func main() {
 	} else {
 		n = cluster.CreateNode(true)
 	}
-	n.Initialize()
+	endSignal := make(chan bool)
+	n.Initialize(endSignal)
+	for {}
+	<-endSignal
 }

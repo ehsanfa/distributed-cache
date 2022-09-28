@@ -1,7 +1,6 @@
 package cluster
 
 import (
-	"os"
 	"fmt"
 	"time"
 	"runtime"
@@ -43,16 +42,14 @@ func (n *Node) peersToGossip() map[Peer]bool {
  - There should be max limit on how many buddies a node can have
 */
 
-func (n *Node) startGossiping(endSignal chan<- bool) {
+func (n *Node) startGossiping(endSignal <-chan bool) {
 	timer := time.NewTicker(gossipInterval)
-	done := make(chan bool)
 	go func() {
 		for {
 			select {
 			case <-timer.C:
 				n.spawnToGossip()
-			case <-done:
-				endSignal <- true
+			case <-endSignal:
 				break
 			}
 		}
@@ -66,7 +63,6 @@ func (n *Node) spawnToGossip() {
 }
 
 var alreadyPushed bool
-var counter int = 0
 
 func (n *Node) doGossip(p Peer) error{
 	fmt.Println("goroutine counter", runtime.NumGoroutine())
@@ -94,19 +90,6 @@ func (n *Node) doGossip(p Peer) error{
 		n.unbuddy(p)
 		return nil
 	}
-
-	counter++
-
-	if _, ok := os.LookupEnv("IS_SENDER"); ok && !alreadyPushed{
-		var cacheResp CacheResponse
-		cacheRequestPut := CacheRequest{Action: 2, Key: "hasan", Value: "mammad"}
-		e := c.Call("Node.Put", cacheRequestPut, &cacheResp)
-		fmt.Println(e)
-		// cacheRequestGet := CacheRequest{Action: 1, Key: "hasan"}
-		// c.Call("Node.Get", cacheRequestGet, &cacheResp)
-		alreadyPushed = true
-	}
-	// fmt.Println("cache", n.cache)
 
 	updateInfo(resp)
 	n.checkForBuddies()
@@ -149,14 +132,6 @@ func updatePartitionsInfo(peer Peer, peerInfo PeerInfo) {
 }
 
 func (n *Node) Gossip(req GossipRequest, resp *Response) error {
-	counter++
-	if counter > 3 {
-		val, isDead := os.LookupEnv("DEAD")
-		if isDead && val == "yes" {
-			fmt.Println("simulating death")
-			time.Sleep(60 * time.Second)
-		}
-	}
 	updateInfo(req)
 	*resp = Response{
 		Info: info, 

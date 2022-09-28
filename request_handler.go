@@ -235,7 +235,7 @@ func main() {
     	key := RandStringBytes(10)
     	value := RandStringBytes(50)
     	// c.getInfo()
-    	time.Sleep(1 * time.Millisecond)
+    	time.Sleep(1000 * time.Millisecond)
     	// fmt.Println("handler info", c.info)
     	go c.put(fmt.Sprintf("%d", key), fmt.Sprintf("%d", value))
     	v := c.get(fmt.Sprintf("%d", key))
