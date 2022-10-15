@@ -84,15 +84,17 @@ func (p *Peer) isSame(other Peer) bool {
 }
 
 type Node struct {
-	connections  map[Peer]*rpc.Client
-	partitions   []partition.Partition    
-	partition    partition.Partition
-	isSeeder     bool
-	buddies      map[Peer]bool
-	seeder       Seeder
-	cache        map[string]string
-	Peer         *Peer
-	mu           sync.RWMutex
+	bufferSizeExceeded chan bool
+	shareCacheBuffer   SharingBuffer
+	connections        map[Peer]*rpc.Client
+	partitions         []partition.Partition    
+	partition          partition.Partition
+	isSeeder           bool
+	buddies            map[Peer]bool
+	seeder             Seeder
+	cache              map[string]string
+	Peer               *Peer
+	mu                 sync.RWMutex
 }
 
 func (n *Node) SetSeeder(s Seeder) {

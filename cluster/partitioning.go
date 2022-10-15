@@ -8,7 +8,7 @@ import (
 var partitions []partition.Partition
 var assignedPartitions map[partition.Partition]map[Peer]bool
 
-func (n *Node) getPeersForPartitioning(key string) map[Peer]bool{
+func (n *Node) getPeersForPartitioning() map[Peer]bool{
 	p := n.partition
 	peers, ok := assignedPartitions[p]
 	if !ok {

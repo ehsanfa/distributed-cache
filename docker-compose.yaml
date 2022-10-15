@@ -32,6 +32,8 @@ services:
     image: golang:latest
     volumes:
       - "cacher:/go/src"
+    deploy:
+      replicas: 3
     working_dir: "/go/src"
     command: "go run request_handler.go"
     depends_on:

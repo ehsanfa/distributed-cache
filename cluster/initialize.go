@@ -38,4 +38,6 @@ func (n *Node) Initialize(endSignal chan bool) {
 
 	// time.Sleep(time.Second * 5)
 	go n.startGossiping(endSignal)
+	go n.startSharingBuffer()
+	go n.reportCount()
 }
