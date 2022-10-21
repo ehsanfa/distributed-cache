@@ -5,12 +5,14 @@ import (
 	// "fmt"
 	// "time"
 	"net/rpc"
+	ll "github.com/ehsanfa/linked-list"
 )
 
 func (n *Node) Initialize(endSignal chan bool) {
 	info = make(map[Peer]PeerInfo)
 	n.cache = make(map[string]string)
 	n.connections = make(map[Peer]*rpc.Client)
+	n.shareCacheBuffer = SharingBuffer{Buffer: ll.NewLinkedList()}
 
 	thisNode = n
 
@@ -38,6 +40,6 @@ func (n *Node) Initialize(endSignal chan bool) {
 
 	// time.Sleep(time.Second * 5)
 	go n.startGossiping(endSignal)
-	go n.startSharingBuffer()
+	go n.startCleaningBuffer()
 	go n.reportCount()
 }

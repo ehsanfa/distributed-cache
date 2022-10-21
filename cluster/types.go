@@ -91,6 +91,7 @@ type Node struct {
 	partition          partition.Partition
 	isSeeder           bool
 	buddies            map[Peer]bool
+	cacheMu            sync.RWMutex
 	seeder             Seeder
 	cache              map[string]string
 	Peer               *Peer

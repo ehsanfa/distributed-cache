@@ -7,6 +7,7 @@ import (
 	"net/rpc"
 	"sort"
 	"strconv"
+	"runtime"
 	partition "dbcache/partitioning"
 )
 
@@ -164,7 +165,7 @@ func (c *Cluster) getInfo(infoReceived chan<- bool){
 	}
 	defer conn.Close()
 
-	ticker := time.NewTicker(5 * time.Second)
+	ticker := time.NewTicker(10 * time.Second)
 	var connectionOpened chan bool
 	for {
 		select {
@@ -174,6 +175,7 @@ func (c *Cluster) getInfo(infoReceived chan<- bool){
 			req := ShareCacheRequest{}
 			conn.Call("Node.ShareInfo", req, &resp)
 			c.info = resp.Info
+			fmt.Println("got info ", resp.Info)
 			c.partitions = make(map[partition.Partition]map[*Peer]bool)
 			var pps map[*Peer]bool
 			for part, peers := range resp.Partitions {
@@ -232,12 +234,13 @@ func main() {
 	fmt.Println(c.partitions, c.info)
 	// go c.put()
     for {
+    	fmt.Println("goroutine counter", runtime.NumGoroutine())
     	key := RandStringBytes(10)
     	value := RandStringBytes(50)
     	// c.getInfo()
-    	time.Sleep(1000 * time.Nanosecond)
+    	time.Sleep(10 * time.Nanosecond)
     	// fmt.Println("handler info", c.info)
-    	go c.put(fmt.Sprintf("%d", key), fmt.Sprintf("%d", value))
+    	c.put(fmt.Sprintf("%d", key), fmt.Sprintf("%d", value))
     	v := c.get(fmt.Sprintf("%d", key))
     	// fmt.Println(partition.GetPartition(fmt.Sprintf("%d", key)))
     	fmt.Println("IS HIT?", v == fmt.Sprintf("%d", value))

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 	"dbcache/types"
+	ll "github.com/ehsanfa/linked-list"
 )
 
 var counter int64 = 0
@@ -40,11 +41,11 @@ type ShareCacheRequest struct {
 }
 
 type SharingBuffer struct {
-	Buffer      []ShareCacheRequest
+	Buffer      ll.LinkedList
 }
 
 func (b *SharingBuffer) isEmpty() bool {
-	return len(b.Buffer) == 0
+	return b.Buffer.Count() == 0
 }
 
 type ShareBufferRequest struct {
@@ -52,13 +53,15 @@ type ShareBufferRequest struct {
 	AlreadyAware  map[Peer]bool
 }
 
-func (n *Node) startSharingBuffer() {
+func (n *Node) startCleaningBuffer() {
 	ticker := time.NewTicker(shareBufferInterval)
 	for {
 		select {
 		case <-ticker.C:
+			n.commit()
 			n.shareBuffer()
 		case <-n.bufferSizeExceeded:
+			n.commit()
 			n.shareBuffer()
 		}
 	}
@@ -125,9 +128,9 @@ func (n *Node) share(p Peer, req ShareBufferRequest) {
 
 func (n *Node) Get(req CacheRequest, resp *CacheResponse) error {
 	counter++
-	thisNode.mu.RLock()
+	thisNode.cacheMu.RLock()
 	val, ok := thisNode.cache[req.Key]
-	thisNode.mu.RUnlock()
+	thisNode.cacheMu.RUnlock()
 	*resp = CacheResponse{ok, req.Key, val}
 	return nil
 }
@@ -136,29 +139,44 @@ func (n *Node) ShareBuffer(req ShareBufferRequest, resp *ShareCacheResposne) err
 	*resp = ShareCacheResposne{Cache: thisNode.cache}
 	req.AlreadyAware[*thisNode.getPeer()] = true
 	go thisNode.handOverBuffer(req)
-	for _, c := range req.Buffer.Buffer {
-		thisNode.put(c.Key, c.Value)
-	}
+	// for _, c := range req.Buffer.Buffer {
+	// 	thisNode.put(c.Key, c.Value)
+	// }
 	return nil
 }
 
+func (n *Node) commit() {
+	if n.shareCacheBuffer.isEmpty() {
+		return
+	}
+	for n.shareCacheBuffer.Buffer.Count() != 0 {
+		if n.shareCacheBuffer.Buffer.Tail() == nil {
+			return
+		}
+		node := n.shareCacheBuffer.Buffer.Pop()
+		val := node.Value().(ShareCacheRequest)
+		n.put(val.Key, val.Value)
+	}
+}
+
 func (n *Node) put(key, value string) {
-	thisNode.mu.Lock()
+	thisNode.cacheMu.Lock()
 	thisNode.cache[key] = value
-	thisNode.mu.Unlock()
+	thisNode.cacheMu.Unlock()
 }
 
 func (n *Node) addToBuffer(req ShareCacheRequest) {
-	n.shareCacheBuffer.Buffer = append(n.shareCacheBuffer.Buffer, req)
-	if len(n.shareCacheBuffer.Buffer) > bufferSizeLimit {
+	// TODO; use queue instead of array
+	n.shareCacheBuffer.Buffer.Append(req)
+	if n.shareCacheBuffer.Buffer.Count() > bufferSizeLimit {
 		n.bufferSizeExceeded <- true
 	}
-	fmt.Println("added to buffer", n.shareCacheBuffer)
+	fmt.Println("added to buffer", n.shareCacheBuffer.Buffer.Count())
 }
 
 func (n *Node) Put(req CacheRequest, resp *CacheResponse) error {
 	counter++
-	thisNode.put(req.Key, req.Value)
+	// go thisNode.put(req.Key, req.Value)
 	thisNode.addToBuffer(ShareCacheRequest{
 		req.Key,
 		req.Value,
