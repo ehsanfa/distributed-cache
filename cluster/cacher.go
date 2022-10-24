@@ -80,7 +80,7 @@ func (n *Node) shareBuffer() {
 		return
 	}
 	peers := n.getPeersToShareBuffer()
-	fmt.Println("sharing buffer with peers", peers)
+	// fmt.Println("sharing buffer with peers", peers)
 	req := ShareBufferRequest{Buffer: n.shareCacheBuffer}
 	req.AlreadyAware = make(map[Peer]bool)
 	req.AlreadyAware[*n.getPeer()] = true
@@ -171,7 +171,7 @@ func (n *Node) addToBuffer(req ShareCacheRequest) {
 	if n.shareCacheBuffer.Buffer.Count() > bufferSizeLimit {
 		n.bufferSizeExceeded <- true
 	}
-	fmt.Println("added to buffer", n.shareCacheBuffer.Buffer.Count())
+	// fmt.Println("added to buffer", n.shareCacheBuffer.Buffer.Count())
 }
 
 func (n *Node) Put(req CacheRequest, resp *CacheResponse) error {

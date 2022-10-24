@@ -6,7 +6,7 @@ import (
 	"runtime"
 )
 
-const gossipInterval = 1 * time.Second
+const gossipInterval = 5 * time.Second
 const gossipTimeout = 5 * time.Second
 
 var thisNode *Node
