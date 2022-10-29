@@ -16,7 +16,7 @@ services:
   seeder:
     image: golang:latest
     deploy:
-      replicas: 3
+      replicas: 1
     volumes:
       - "cacher:/go/src"
     command: "go run node.go"
@@ -33,7 +33,7 @@ services:
     volumes:
       - "cacher:/go/src"
     deploy:
-      replicas: 3
+      replicas: 5
     working_dir: "/go/src"
     command: "go run request_handler.go"
     depends_on:
@@ -45,7 +45,7 @@ services:
   child:
     image: golang:latest
     deploy:
-      replicas: 3
+      replicas: 13
     volumes:
       - "cacher:/go/src"
     command: "go run node.go"

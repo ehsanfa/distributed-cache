@@ -12,7 +12,7 @@ import (
  */ 
 func (c *Cluster) sortPartitions() {
 	ps := []int{}
-	for p, _ := range c.partitions {
+	for p, _ := range c.nodes {
 		i, _ := strconv.Atoi(p.Key)
 		ps = append(ps, i)
 	}
@@ -28,7 +28,7 @@ func (c *Cluster) sortPartitions() {
 }
 
 func (c *Cluster) getNearestPartition(p partition.Partition) partition.Partition {
-	if _, ok := c.partitions[p]; ok {
+	if _, ok := c.nodes[p]; ok {
 		return p
 	}
 	c.sortPartitions()

@@ -7,53 +7,59 @@ import (
 	partition "dbcache/partitioning"
 )
 
-func (c *Cluster) getNodes(p partition.Partition) map[*Peer]*rpc.Client {
+func (c *Cluster) getNodes(p partition.Partition) *ClusterNodes {
 	p = c.getNearestPartition(p)
-	peers, ok := c.partitions[p]
+	peers, ok := c.nodes[p]
 	if !ok {
-		return make(map[*Peer]*rpc.Client)
+		return NewClusterNodes()
 	}
 	return peers
 }
 
 func (c *Cluster) pickNode(key string) *Peer {
 	part := partition.GetPartition(key)
-	for peer, _ := range c.getNodes(part) {
-		return peer
+	nodes := c.getNodes(part)
+	if !nodes.isEmpty() {
+		if peer, err := nodes.dequeue(); err == nil {
+			return peer
+		}
 	}
 	return &c.seeder
 }
 
 func NewCluster() *Cluster {
 	c := new(Cluster)
-	c.partitions = make(map[partition.Partition]map[*Peer]*rpc.Client)
+	c.nodes = make(map[partition.Partition]*ClusterNodes)
+
 	return c
 }
 
 func (c *Cluster) addPeer(part partition.Partition, peer *Peer) {
-	if c.partitions == nil {
-		c.partitions = make(map[partition.Partition]map[*Peer]*rpc.Client)
+	if c.nodes == nil {
+		c.nodes = make(map[partition.Partition]*ClusterNodes)
 	}
-	if c.partitions[part] == nil {
-		c.partitions[part] = make(map[*Peer]*rpc.Client)
+	if c.nodes[part] == nil {
+		c.nodes[part] = NewClusterNodes()
 	}
-	if _, ok := c.partitions[part]; !ok {
-		c.partitions[part] = make(map[*Peer]*rpc.Client)
+	if _, ok := c.nodes[part]; !ok {
+		c.nodes[part] = NewClusterNodes()
 	}
-	if _, ok := c.partitions[part][peer]; !ok {
-		conn, err := dial(peer)
+	if !c.nodes[part].exists(peer.info) {
+		err := peer.prepare()
 		if err != nil {
+			fmt.Println(err, peer.info)
 			return
 		}
-		peer.conn = conn
-		c.partitions[part][peer] = conn
+		c.nodes[part].add(peer.info, peer)
+		// c.nodes[part][peer.info] = peer
+		fmt.Println("commit adding part node", part, peer)
 		go peer.listen()
 	}
 }
 
 func (c *Cluster) getInfo(infoReceived chan<- bool){
 	p := c.seeder
-	conn, err := rpc.Dial("tcp", fmt.Sprintf("%s:%s", p.Name, p.Port))
+	conn, err := rpc.Dial("tcp", fmt.Sprintf("%s:%s", p.info.Name, p.info.Port))
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -73,13 +79,13 @@ func (c *Cluster) getInfo(infoReceived chan<- bool){
 			// var pps map[*Peer]bool
 			for part, peers := range resp.Partitions {
 				// pps = make(/[*Peer]bool)
-				for pe, _ := range peers {
-					mn := &Peer{Name: pe.Name, Port: pe.Port}
+				for pi, _ := range peers {
+					mn := &Peer{info: PeerInfo{Name: pi.Name, Port: pi.Port}}
 					c.addPeer(part, mn)
 				}
-				// c.partitions[part] = pps
+				// c.nodes[part] = pps
 			}
-			// c.partitions = resp.Partitions
+			// c.nodes = resp.Partitions
 			c.sortPartitions()
 			infoReceived <- true
 		}

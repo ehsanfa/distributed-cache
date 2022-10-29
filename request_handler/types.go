@@ -12,24 +12,32 @@ func (p Port) String() string {
 	return fmt.Sprintf("%d", uint32(p))
 }
 
-type Peer struct {
+type PeerInfo struct {
 	Name   string
 	Port   Port
+}
+
+type Peer struct {
+	info    PeerInfo
 	putChan chan putReq
 	reqChan chan CacheRequest
 	conn   *rpc.Client
 }
 
+// type ClusterNodes map[PeerInfo]*Peer
+
+// type ClusterNodesDeque deque.Deque
+
 type Cluster struct {
 	info   map[Peer]bool
 	seeder Peer
-	partitions map[partition.Partition]map[*Peer]*rpc.Client
+	nodes map[partition.Partition]*ClusterNodes
 	sortedPartitions []partition.Partition
 }
 
 type ShareInfoResponse struct {
 	Info       map[Peer]bool
-	Partitions map[partition.Partition]map[Peer]bool
+	Partitions map[partition.Partition]map[PeerInfo]bool
 }
 
 type ShareCacheRequest struct{}
@@ -39,6 +47,8 @@ type CacheRequest struct {
 	Key string
 	Value string
 }
+
+type GetRequest string
 
 type CacheRequestResponse struct {
 	Ok bool

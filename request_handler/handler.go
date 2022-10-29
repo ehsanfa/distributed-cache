@@ -21,7 +21,7 @@ func RandStringBytes(n int) string {
 
 func Handle() {
 	c := new(Cluster)
-	c.seeder = Peer{Name: "seeder", Port: Port(7000)}
+	c.seeder = Peer{info: PeerInfo{Name: "seeder", Port: Port(7000)}}
 	seederConnected := make(chan bool)
 	go c.seeder.seederListen(seederConnected)
 	if ok := <-seederConnected; !ok {
@@ -35,21 +35,19 @@ func Handle() {
 			<-infoReceived
 		}
 	}()
-	// fmt.Println(c.partitions, c.info)
+	// fmt.Println(c.nodes, c.info)
 
 	// go c.put()
     for {
     	// fmt.Println("goroutine counter", runtime.NumGoroutine())
-    	key := "1"
+    	key := RandStringBytes(4)
     	value := "2"
     	// c.getInfo()
-    	time.Sleep(10 * time.Nanosecond)
+    	time.Sleep(100 * time.Microsecond)
     	// fmt.Println("handler info", c.info)
     	c.put(fmt.Sprintf("%d", key), fmt.Sprintf("%d", value))
     	c.put(fmt.Sprintf("%d", key), fmt.Sprintf("%d", value))
     	c.put(fmt.Sprintf("%d", key), fmt.Sprintf("%d", value))
-    	// c.put(fmt.Sprintf("%d", key), fmt.Sprintf("%d", value))
-    	// c.put(fmt.Sprintf("%d", key), fmt.Sprintf("%d", value))
     	c.get(fmt.Sprintf("%d", key))
     	c.get(fmt.Sprintf("%d", key))
     	c.get(fmt.Sprintf("%d", key))

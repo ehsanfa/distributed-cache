@@ -6,6 +6,8 @@ import (
 	"strconv"
 )
 
+const distributionFactor = 13
+
 type Partition struct {
 	Key string
 }
@@ -15,7 +17,7 @@ type Partitioner interface {
 }
 
 func getDegree(bytesTotal int) int{
-	return bytesTotal % 360
+	return (bytesTotal * distributionFactor) % 360
 }
 
 func (p *Partition) getPartitionKey(key string) string{

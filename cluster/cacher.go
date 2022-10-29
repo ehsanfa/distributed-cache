@@ -16,7 +16,7 @@ func (n *Node) reportCount() {
 	for {
 		select {
 		case <-ticker.C:
-			fmt.Println("report counter", counter/5)
+			fmt.Println("report counter", counter/5, n.partition)
 			counter = 0
 		}
 	}
@@ -126,12 +126,14 @@ func (n *Node) share(p Peer, req ShareBufferRequest) {
 	}
 }
 
-func (n *Node) Get(req CacheRequest, resp *CacheResponse) error {
+type GetRequest string
+
+func (n *Node) Get(key GetRequest, resp *CacheResponse) error {
 	counter++
 	thisNode.cacheMu.RLock()
-	val, ok := thisNode.cache[req.Key]
+	val, ok := thisNode.cache[string(key)]
 	thisNode.cacheMu.RUnlock()
-	*resp = CacheResponse{ok, req.Key, val}
+	*resp = CacheResponse{ok, string(key), val}
 	return nil
 }
 
