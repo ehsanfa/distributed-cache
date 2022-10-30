@@ -33,9 +33,11 @@ services:
     volumes:
       - "cacher:/go/src"
     deploy:
-      replicas: 5
+      replicas: 1
     working_dir: "/go/src"
     command: "go run request_handler.go"
+    ports:
+      - "8755:8755"
     depends_on:
       - seeder
     networks:
@@ -45,7 +47,7 @@ services:
   child:
     image: golang:latest
     deploy:
-      replicas: 13
+      replicas: 3
     volumes:
       - "cacher:/go/src"
     command: "go run node.go"

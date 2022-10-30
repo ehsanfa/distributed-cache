@@ -1,7 +1,7 @@
 package request_handler
 
 import (
-	"fmt"
+	// "fmt"
 	"time"
 	"math/rand"
 	// "runtime"
@@ -35,25 +35,27 @@ func Handle() {
 			<-infoReceived
 		}
 	}()
-	// fmt.Println(c.nodes, c.info)
+	// // fmt.Println(c.nodes, c.info)
 
-	// go c.put()
-    for {
-    	// fmt.Println("goroutine counter", runtime.NumGoroutine())
-    	key := RandStringBytes(4)
-    	value := "2"
-    	// c.getInfo()
-    	time.Sleep(100 * time.Microsecond)
-    	// fmt.Println("handler info", c.info)
-    	c.put(fmt.Sprintf("%d", key), fmt.Sprintf("%d", value))
-    	c.put(fmt.Sprintf("%d", key), fmt.Sprintf("%d", value))
-    	c.put(fmt.Sprintf("%d", key), fmt.Sprintf("%d", value))
-    	c.get(fmt.Sprintf("%d", key))
-    	c.get(fmt.Sprintf("%d", key))
-    	c.get(fmt.Sprintf("%d", key))
-    	c.get(fmt.Sprintf("%d", key))
-    	c.get(fmt.Sprintf("%d", key))
-    	// fmt.Println(partition.GetPartition(fmt.Sprintf("%d", key)))
-    	// fmt.Println("IS HIT?", v == fmt.Sprintf("%d", value))
-    }
+	// // go c.put()
+ //    for {
+ //    	// fmt.Println("goroutine counter", runtime.NumGoroutine())
+ //    	key := RandStringBytes(4)
+ //    	value := "2"
+ //    	// c.getInfo()
+ //    	time.Sleep(100 * time.Microsecond)
+ //    	// fmt.Println("handler info", c.info)
+ //    	c.put(fmt.Sprintf("%d", key), fmt.Sprintf("%d", value))
+ //    	c.put(fmt.Sprintf("%d", key), fmt.Sprintf("%d", value))
+ //    	c.put(fmt.Sprintf("%d", key), fmt.Sprintf("%d", value))
+ //    	c.get(fmt.Sprintf("%d", key))
+ //    	c.get(fmt.Sprintf("%d", key))
+ //    	c.get(fmt.Sprintf("%d", key))
+ //    	c.get(fmt.Sprintf("%d", key))
+ //    	c.get(fmt.Sprintf("%d", key))
+ //    	// fmt.Println(partition.GetPartition(fmt.Sprintf("%d", key)))
+ //    	// fmt.Println("IS HIT?", v == fmt.Sprintf("%d", value))
+ //    }
+
+ 	c.serve()
 }
