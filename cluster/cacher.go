@@ -187,3 +187,8 @@ func (n *Node) Put(req CacheRequest, resp *CacheResponse) error {
 	*resp = CacheResponse{true, req.Key, ""}
 	return nil
 }
+
+func (n *Node) ShareCache(req ShareCacheRequest, resp *ShareCacheResposne) error {
+	*resp = ShareCacheResposne{Cache: thisNode.cache}
+	return nil
+}

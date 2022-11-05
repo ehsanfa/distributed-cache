@@ -42,4 +42,5 @@ func (n *Node) Initialize(endSignal chan bool) {
 	go n.startGossiping(endSignal)
 	go n.startCleaningBuffer()
 	go n.reportCount()
+	n.syncCacheWithPeers()
 }

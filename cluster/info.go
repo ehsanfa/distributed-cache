@@ -16,6 +16,16 @@ func getInfoList() []Peer {
 	return peers
 }
 
+func getPartitionPeers(p partition.Partition) []Peer {
+	var peers []Peer
+	for peer, pi := range info {
+		if p == pi.Partition && peer != *thisNode.getPeer() {
+			peers = append(peers, peer)
+		}
+	}
+	return peers
+}
+
 func getInfo(peer Peer) (PeerInfo, bool){
 	infoMutex.RLock()
 	v, ok := info[peer]

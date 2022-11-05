@@ -14,7 +14,6 @@ func (n *Node) introduce() {
 	var resp Response
 	c.Call("Node.Introduce", n.getPeer(), &resp)
 	updateInfo(resp)
-	n.cache = resp.Cache
 	n.partition = resp.Partition
 }
 
@@ -25,6 +24,13 @@ func (n *Node) Introduce(peer Peer, resp *Response) error {
 	i.touch()
 	peer.track(i)
 	fmt.Println("partitions", peer, i.Partition)
-	*resp = Response{Info: info, Cache: thisNode.cache, Partition: i.Partition}
+	*resp = Response{Info: info, Partition: i.Partition}
 	return nil
+}
+
+func (n *Node) syncCacheWithPeers() {
+	peers := getPartitionPeers(n.partition)
+	for _, p := range peers {
+		n.askForCache(p)
+	}
 }
