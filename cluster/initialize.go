@@ -5,14 +5,14 @@ import (
 	// "fmt"
 	// "time"
 	"net/rpc"
-	ll "github.com/ehsanfa/linked-list"
+	// ll "github.com/ehsanfa/linked-list"
 )
 
 func (n *Node) Initialize(endSignal chan bool) {
 	info = make(map[Peer]PeerInfo)
-	n.cache = make(map[string]string)
+	n.cache = make(map[string]CacheValue)
 	n.connections = make(map[Peer]*rpc.Client)
-	n.shareCacheBuffer = SharingBuffer{Buffer: ll.NewLinkedList()}
+	n.buffer = Buffer{}
 
 	thisNode = n
 

@@ -3,13 +3,21 @@ package cluster
 import (
 	"fmt"
 	"time"
-	"dbcache/types"
+	"math/rand"
+	// "dbcache/types"
 	ll "github.com/ehsanfa/linked-list"
 )
 
 var counter int64 = 0
-const shareBufferInterval = 5 * time.Second
+const shareMin = 2000
+const shareMax = 5000
+var shareBufferInterval = getShareBufferInterval()
 const bufferSizeLimit = 1 << 32
+
+func getShareBufferInterval() time.Duration {
+	rand.Seed(time.Now().UnixNano())
+	return time.Duration(rand.Intn(shareMax - shareMin) + shareMin) * time.Millisecond
+}
 
 func (n *Node) reportCount() {
 	ticker := time.NewTicker(5 * time.Second)
@@ -26,35 +34,57 @@ type CacheRequest struct {
 	Action int8
 	Key string
 	Value string
+	Version CacheVersion
 }
 
-type CacheResponse types.Resp
+type CacheResponse struct {
+	Ok bool
+	Key string
+	Value string
+}
 
 type ShareCacheResposne struct {
-	Cache    map[string]string
+	Cache    map[string]CacheValue
 }
 
-type ShareCacheRequest struct {
+type CacheEntity struct {
 	Key        string
-	Value      string
-	UpdatedAt  time.Time
+	Value      CacheValue
 }
 
-type SharingBuffer struct {
-	Buffer      ll.LinkedList
+type Buffer struct {
+	internal      ll.LinkedList
+	SharingBuffer map[string]CacheValue
 }
 
-func (b *SharingBuffer) isEmpty() bool {
-	return b.Buffer.Count() == 0
+func (b *Buffer) isEmpty() bool {
+	return b.internal.Count() == 0
+}
+
+func (b *Buffer) shareIsEmpty() bool {
+	return len(b.SharingBuffer) == 0
+}
+
+func (b *Buffer) add(c CacheEntity) {
+	b.internal.Append(c)
+	if b.SharingBuffer == nil {
+		b.SharingBuffer = make(map[string]CacheValue)
+	}
+	b.SharingBuffer[c.Key] = c.Value
+}
+
+func (b *Buffer) count() int {
+	return b.internal.Count()
 }
 
 type ShareBufferRequest struct {
-	Buffer        SharingBuffer
+	Buffer        Buffer
 	AlreadyAware  map[Peer]bool
 }
 
 func (n *Node) startCleaningBuffer() {
 	ticker := time.NewTicker(shareBufferInterval)
+	fmt.Println("cleaning buffer every", shareBufferInterval)
 	for {
 		select {
 		case <-ticker.C:
@@ -76,12 +106,12 @@ func (n *Node) getPeersToShareBuffer() map[Peer]bool {
 }
 
 func (n *Node) shareBuffer() {
-	if n.shareCacheBuffer.isEmpty() {
+	if n.buffer.shareIsEmpty() {
 		return
 	}
 	peers := n.getPeersToShareBuffer()
 	// fmt.Println("sharing buffer with peers", peers)
-	req := ShareBufferRequest{Buffer: n.shareCacheBuffer}
+	req := ShareBufferRequest{Buffer: n.buffer}
 	req.AlreadyAware = make(map[Peer]bool)
 	req.AlreadyAware[*n.getPeer()] = true
 	for peer, _ := range peers {
@@ -91,7 +121,7 @@ func (n *Node) shareBuffer() {
 }
 
 func (n *Node) resetBuffer() {
-	n.shareCacheBuffer = SharingBuffer{}
+	n.buffer = Buffer{}
 }
 
 func (n *Node) handOverBuffer(req ShareBufferRequest) {
@@ -105,17 +135,23 @@ func (n *Node) handOverBuffer(req ShareBufferRequest) {
 }
 
 func (n *Node) share(p Peer, req ShareBufferRequest) {
+	if p == *n.getPeer() {
+		return
+	}
+	fmt.Println("sharing buffer with peer", p, req)
 	c, err := n.getConnection(p)
 	if err != nil {
 		fmt.Println("peer not responding. unbuddying", p, n.peersToGossip())
 		n.unbuddy(p)
 		return
 	}
-	defer c.Close()
 
 	var resp CacheResponse
 	timer := time.NewTimer(gossipTimeout)
 	call := c.Go("Node.ShareBuffer", req, &resp, nil)
+	if call.Error != nil {
+		fmt.Println(call.Error)
+	}
 	select{
 	case <-call.Done:
 		timer.Stop()
@@ -126,69 +162,102 @@ func (n *Node) share(p Peer, req ShareBufferRequest) {
 	}
 }
 
-type GetRequest string
-
-func (n *Node) Get(key GetRequest, resp *CacheResponse) error {
+func (n *Node) Get(key string, resp *CacheResponse) error {
 	counter++
 	thisNode.cacheMu.RLock()
-	val, ok := thisNode.cache[string(key)]
+	val, ok := thisNode.cache[key]
 	thisNode.cacheMu.RUnlock()
-	*resp = CacheResponse{ok, string(key), val}
+	*resp = CacheResponse{ok, key, val.Value}
 	return nil
 }
 
-func (n *Node) ShareBuffer(req ShareBufferRequest, resp *ShareCacheResposne) error {
-	*resp = ShareCacheResposne{Cache: thisNode.cache}
+func (n *Node) ShareBuffer(req ShareBufferRequest, resp *CacheResponse) error {
+	fmt.Println("heeeeeeeeeeeeere")
+	*resp = CacheResponse{}
 	req.AlreadyAware[*thisNode.getPeer()] = true
 	go thisNode.handOverBuffer(req)
-	// for _, c := range req.Buffer.Buffer {
-	// 	thisNode.put(c.Key, c.Value)
-	// }
+	for k, v := range req.Buffer.SharingBuffer {
+		thisNode.buffer.internal.Append(CacheEntity{k, v})
+	}
 	return nil
 }
 
 func (n *Node) commit() {
-	if n.shareCacheBuffer.isEmpty() {
+	if n.buffer.isEmpty() {
 		return
 	}
-	for n.shareCacheBuffer.Buffer.Count() != 0 {
-		if n.shareCacheBuffer.Buffer.Tail() == nil {
+	buffer := n.buffer.internal
+	for buffer.Count() != 0 {
+		if buffer.Tail() == nil {
 			return
 		}
-		node := n.shareCacheBuffer.Buffer.Pop()
-		val := node.Value().(ShareCacheRequest)
-		n.put(val.Key, val.Value)
+		c := buffer.Pop()
+		e := c.Value().(CacheEntity)
+		if e.Value.Version > n.getCacheVersion(e.Key) {
+			n.put(e.Key, CacheValue{e.Value.Value, e.Value.Version})
+		}
 	}
 }
 
-func (n *Node) put(key, value string) {
+func NewCacheValue() CacheValue {
+	return CacheValue{}
+}
+
+// func (c CacheValue) update(val CacheValue) CacheValue {
+// 	c.Value = val
+// 	c.Version = c.Version.update()
+// 	return c
+// }
+
+func (v CacheVersion) update() CacheVersion {
+	v += 1
+	return v
+}
+
+func (n *Node) getCacheVersion(key string) CacheVersion {
+	thisNode.cacheMu.RLock()
+	val, ok := thisNode.cache[key]
+	thisNode.cacheMu.RUnlock()
+	if !ok {
+		return 0
+	}
+	return val.Version
+}
+
+func (n *Node) put(key string, value CacheValue) {
 	thisNode.cacheMu.Lock()
+	if _, ok := thisNode.cache[key]; !ok {
+		thisNode.cache[key] = NewCacheValue()
+	}
 	thisNode.cache[key] = value
 	thisNode.cacheMu.Unlock()
+	fmt.Println(thisNode.cache[key])
 }
 
-func (n *Node) addToBuffer(req ShareCacheRequest) {
+func (n *Node) addToBuffer(req CacheEntity) {
 	// TODO; use queue instead of array
-	n.shareCacheBuffer.Buffer.Append(req)
-	if n.shareCacheBuffer.Buffer.Count() > bufferSizeLimit {
+	req.Value.Version = req.Value.Version.update()
+	n.buffer.add(req)
+	if n.buffer.count() > bufferSizeLimit {
 		n.bufferSizeExceeded <- true
 	}
-	// fmt.Println("added to buffer", n.shareCacheBuffer.Buffer.Count())
+	fmt.Println("added to buffer", req)
+	// fmt.Println("added to buffer", n.buffer.Buffer.Count())
 }
 
 func (n *Node) Put(req CacheRequest, resp *CacheResponse) error {
 	counter++
+	v := thisNode.getCacheVersion(req.Key)
 	// go thisNode.put(req.Key, req.Value)
-	thisNode.addToBuffer(ShareCacheRequest{
+	thisNode.addToBuffer(CacheEntity{
 		req.Key,
-		req.Value,
-		time.Now(),
+		CacheValue{req.Value,v},
 	})
 	*resp = CacheResponse{true, req.Key, ""}
 	return nil
 }
 
-func (n *Node) ShareCache(req ShareCacheRequest, resp *ShareCacheResposne) error {
+func (n *Node) ShareCache(req CacheEntity, resp *ShareCacheResposne) error {
 	*resp = ShareCacheResposne{Cache: thisNode.cache}
 	return nil
 }

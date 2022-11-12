@@ -75,7 +75,7 @@ func (n *Node) askForCache(peer Peer) {
 	}
 	defer c.Close()
 	var resp ShareCacheResposne
-	req := ShareCacheRequest{}
+	req := CacheEntity{}
 	c.Call("Node.ShareCache", req, &resp)
 	if len(resp.Cache) > 0 {
 		thisNode.cache = resp.Cache

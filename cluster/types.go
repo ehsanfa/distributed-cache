@@ -83,9 +83,16 @@ func (p *Peer) isSame(other Peer) bool {
 	return p.Name == other.Name && p.Port == other.Port
 }
 
+type CacheVersion int
+
+type CacheValue struct {
+	Value   string
+	Version CacheVersion
+}
+
 type Node struct {
 	bufferSizeExceeded chan bool
-	shareCacheBuffer   SharingBuffer
+	buffer             Buffer
 	connections        map[Peer]*rpc.Client
 	partitions         []partition.Partition    
 	partition          partition.Partition
@@ -93,7 +100,7 @@ type Node struct {
 	buddies            map[Peer]bool
 	cacheMu            sync.RWMutex
 	seeder             Seeder
-	cache              map[string]string
+	cache              map[string]CacheValue
 	Peer               *Peer
 	mu                 sync.RWMutex
 }
