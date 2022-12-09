@@ -2,8 +2,8 @@ package cluster
 
 import (
 	"fmt"
-	"time"
 	"runtime"
+	"time"
 )
 
 const gossipInterval = 5 * time.Second
@@ -12,7 +12,7 @@ const gossipTimeout = 5 * time.Second
 var thisNode *Node
 
 type GossipRequest struct {
-	Info      map[Peer]PeerInfo
+	Info map[Peer]PeerInfo
 }
 
 func (g GossipRequest) GetInfo() map[Peer]PeerInfo {
@@ -64,7 +64,7 @@ func (n *Node) spawnToGossip() {
 
 var alreadyPushed bool
 
-func (n *Node) doGossip(p Peer) error{
+func (n *Node) doGossip(p Peer) error {
 	fmt.Println("goroutine counter", runtime.NumGoroutine())
 	/**
 	 * REFACTOR !!
@@ -77,13 +77,12 @@ func (n *Node) doGossip(p Peer) error{
 		fmt.Println("unbuddiying from ", p)
 		return err
 	}
-	defer c.Close()
 
 	var resp Response
 	gossipRequest := GossipRequest{info}
 	timer := time.NewTimer(gossipTimeout)
 	call := c.Go("Node.Gossip", gossipRequest, &resp, nil)
-	select{
+	select {
 	case <-call.Done:
 		timer.Stop()
 	case <-timer.C:
@@ -94,7 +93,7 @@ func (n *Node) doGossip(p Peer) error{
 	updateInfo(resp)
 	n.checkForBuddies()
 
-	// fmt.Println("info", info, assignedPartitions)
+	fmt.Println("info", info)
 	return nil
 }
 
@@ -134,7 +133,7 @@ func updatePartitionsInfo(peer Peer, peerInfo PeerInfo) {
 func (n *Node) Gossip(req GossipRequest, resp *Response) error {
 	updateInfo(req)
 	*resp = Response{
-		Info: info, 
+		Info: info,
 	}
 	return nil
 }

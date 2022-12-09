@@ -92,14 +92,17 @@ type CacheValue struct {
 
 type Node struct {
 	bufferSizeExceeded chan bool
-	buffer             Buffer
+	cacheVersionsMu    sync.RWMutex
+	cacheVersions      map[string]CacheVersion
 	connections        map[Peer]*rpc.Client
 	partitions         []partition.Partition    
 	partition          partition.Partition
 	isSeeder           bool
+	bufferMu           sync.RWMutex
 	buddies            map[Peer]bool
 	cacheMu            sync.RWMutex
 	seeder             Seeder
+	buffer             Buffer
 	cache              map[string]CacheValue
 	Peer               *Peer
 	mu                 sync.RWMutex

@@ -1,9 +1,9 @@
 package request_handler
 
 import (
-	"fmt"
+	// "fmt"
 	"sort"
-	"strconv"
+	// "strconv"
 	partition "dbcache/partitioning"
 )
 
@@ -13,17 +13,16 @@ import (
 func (c *Cluster) sortPartitions() {
 	ps := []int{}
 	for p, _ := range c.nodes {
-		i, _ := strconv.Atoi(p.Key)
+		i := p.Key
 		ps = append(ps, i)
 	}
 	sort.Slice(ps, func(i,j int) bool {
 		return ps[i] < ps[j]
 	})
-	c.sortedPartitions = []partition.Partition{}
-	var key string
+	c.setSortedPartitions([]partition.Partition{})
 	for _, k := range ps {
-		key = fmt.Sprintf("%d", k)
-		c.sortedPartitions = append(c.sortedPartitions, partition.CreateParition(key))
+		// key = fmt.Sprintf("%d", k)
+		c.setSortedPartitions(append(c.getSortedPartitions(), partition.CreateParition(k)))
 	}
 }
 
@@ -32,10 +31,22 @@ func (c *Cluster) getNearestPartition(p partition.Partition) partition.Partition
 		return p
 	}
 	c.sortPartitions()
-	for _, sortedPartition := range c.sortedPartitions {
+	for _, sortedPartition := range c.getSortedPartitions() {
 		if sortedPartition.Compare(p) == 1 {
 			return sortedPartition
 		}
 	}
-	return partition.CreateParition("0")
+	return partition.CreateParition(0)
+}
+
+func (c *Cluster) setSortedPartitions(ps []partition.Partition) {
+	// c.Lock()
+	c.sortedPartitions = ps
+	// c.Unlock()
+}
+
+func (c *Cluster) getSortedPartitions() []partition.Partition {
+	// c.RLock()
+	// defer c.RUnlock()
+	return c.sortedPartitions
 }

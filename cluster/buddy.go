@@ -5,6 +5,7 @@ import (
 )
 
 const maxBuddyNum int = 2
+
 var alreadyRequested map[Peer]bool
 
 func (n *Node) addBuddy(b Peer) {
@@ -14,6 +15,8 @@ func (n *Node) addBuddy(b Peer) {
 }
 
 func (n *Node) getBuddies() map[Peer]bool {
+	n.mu.RLock()
+	defer n.mu.RUnlock()
 	return n.buddies
 }
 
@@ -53,7 +56,7 @@ func (n *Node) checkForBuddies() {
 			fmt.Println("buddy request", peer)
 			if n.becomeBuddies(peer) {
 				break
-			} 
+			}
 		}
 	}
 }
@@ -69,11 +72,10 @@ func (n *Node) BuddyRequest(peer Peer, resp *BuddyRequestResp) error {
 }
 
 func (n *Node) askForCache(peer Peer) {
-	c, err := n.dial(peer)
+	c, err := n.getConnection(peer)
 	if err != nil {
 		panic(err)
 	}
-	defer c.Close()
 	var resp ShareCacheResposne
 	req := CacheEntity{}
 	c.Call("Node.ShareCache", req, &resp)
@@ -83,12 +85,11 @@ func (n *Node) askForCache(peer Peer) {
 }
 
 func (n *Node) becomeBuddies(peer Peer) bool {
-	c, err := n.dial(peer)
+	c, err := n.getConnection(peer)
 	if err != nil {
 		fmt.Println(err)
 		return false
 	}
-	defer c.Close()
 	var resp BuddyRequestResp
 	p := n.getPeer()
 	c.Call("Node.BuddyRequest", p, &resp)

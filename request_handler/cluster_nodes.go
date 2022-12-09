@@ -5,8 +5,8 @@ import (
 )
 
 type ClusterNodes struct {
-	nodes  map[PeerInfo]*Peer 
-	deq *deque.Deque
+	nodes map[PeerInfo]*Peer
+	deq   *deque.Deque
 }
 
 type hasPeer interface {
@@ -29,14 +29,14 @@ func (c *ClusterNodes) add(pi PeerInfo, p *Peer) {
 
 func (c *ClusterNodes) dequeue() (*Peer, error) {
 	p, err := c.deq.Dequeue()
-	if err != nil {
+	if err != nil || p == nil {
 		return nil, err
 	}
 	return p.(hasPeer).getPeer(), nil
 }
 
 func (c *ClusterNodes) isEmpty() bool {
-	return c.deq.Count() == 0
+	return c.deq.IsEmpty()
 }
 
 func NewClusterNodes() *ClusterNodes {

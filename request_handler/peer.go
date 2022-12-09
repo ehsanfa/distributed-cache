@@ -24,10 +24,10 @@ func (p *Peer) seederListen(connectionOpened chan<- bool) {
 		select {
 		case v := <-p.putChan:
 			req := CacheRequest{Action: 2, Key: v.key, Value: v.val}
-			var resp CacheRequestResponse
+			var resp GetCacheResponse
 			p.conn.Call("Node.Put", req, &resp)
 		case req := <-p.reqChan:
-			var resp CacheRequestResponse
+			var resp PutCacheResponse
 			p.conn.Call("Node.Put", req, &resp)
 		}
 	}
@@ -47,7 +47,7 @@ func (p *Peer) listen() {
 	for {
 		select {
 		case req := <-p.reqChan:
-			var resp CacheRequestResponse
+			var resp PutCacheResponse
 			p.conn.Call("Node.Put", req, &resp)
 		}
 	}

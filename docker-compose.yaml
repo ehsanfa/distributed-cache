@@ -16,7 +16,7 @@ services:
   seeder:
     image: golang:latest
     deploy:
-      replicas: 1
+      replicas: 3
     volumes:
       - "cacher:/go/src"
     command: "go run node.go"
@@ -27,6 +27,22 @@ services:
     environment:
       - "PORT=6399"
       - "CLUSTER_PORT=7000"
+
+  request_handler_test:
+    image: golang:latest
+    volumes:
+      - "cacher:/go/src"
+    deploy:
+      replicas: 6
+    working_dir: "/go/src"
+    command: "go run test_request_handler.go"
+    # ports:
+    #   - "8755:8755"
+    depends_on:
+      - seeder
+    networks:
+      - seeds
+      - gossip
 
   request_handler:
     image: golang:latest

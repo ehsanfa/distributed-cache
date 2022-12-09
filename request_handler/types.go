@@ -2,8 +2,9 @@ package request_handler
 
 import (
 	partition "dbcache/partitioning"
-	"net/rpc"
 	"fmt"
+	"net/rpc"
+	"sync"
 )
 
 type Port uint16
@@ -13,15 +14,15 @@ func (p Port) String() string {
 }
 
 type PeerInfo struct {
-	Name   string
-	Port   Port
+	Name string
+	Port Port
 }
 
 type Peer struct {
 	info    PeerInfo
 	putChan chan putReq
 	reqChan chan CacheRequest
-	conn   *rpc.Client
+	conn    *rpc.Client
 }
 
 // type ClusterNodes map[PeerInfo]*Peer
@@ -29,9 +30,10 @@ type Peer struct {
 // type ClusterNodesDeque deque.Deque
 
 type Cluster struct {
-	info   map[Peer]bool
-	seeder Peer
-	nodes map[partition.Partition]*ClusterNodes
+	sync.RWMutex
+	info             map[Peer]bool
+	seeder           Peer
+	nodes            map[partition.Partition]*ClusterNodes
 	sortedPartitions []partition.Partition
 }
 
@@ -44,17 +46,18 @@ type ShareCacheRequest struct{}
 
 type CacheRequest struct {
 	Action int8
-	Key string
-	Value string
+	Key    string
+	Value  string
 }
 
 type GetRequest string
 
-type CacheRequestResponse struct {
-	Ok bool
-	Key string
+type GetCacheResponse struct {
+	Ok    bool
 	Value string
 }
+
+type PutCacheResponse bool
 
 type putReq struct {
 	key string
