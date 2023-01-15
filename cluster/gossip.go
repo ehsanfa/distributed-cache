@@ -93,7 +93,6 @@ func (n *Node) doGossip(p Peer) error {
 	updateInfo(resp)
 	n.checkForBuddies()
 
-	fmt.Println("info", info)
 	return nil
 }
 
@@ -125,7 +124,7 @@ func updateInfo(g GossipMaterial) {
 }
 
 func updatePartitionsInfo(peer Peer, peerInfo PeerInfo) {
-	if peer.isAlive() && peer.hasPartition(peerInfo) {
+	if peer.isAlive() {
 		addToParitionsInfo(peer, peerInfo)
 	}
 }

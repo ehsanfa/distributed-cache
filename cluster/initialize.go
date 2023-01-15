@@ -4,16 +4,15 @@ import (
 	"os"
 	// "fmt"
 	// "time"
+	"dbcache/cluster/buffer"
 	"net/rpc"
 	// ll "github.com/ehsanfa/linked-list"
 )
 
 func (n *Node) Initialize(endSignal chan bool) {
-	info = make(map[Peer]PeerInfo)
-	n.cache = make(map[string]CacheValue)
-	n.cacheVersions = make(map[string]CacheVersion)
+	// n.cacheVersions = make(map[string]cacher.CacheVersion)
 	n.connections = make(map[Peer]*rpc.Client)
-	n.buffer = Buffer{}
+	n.buffer = buffer.CreateInMemoryBuffer()
 
 	thisNode = n
 
@@ -22,7 +21,7 @@ func (n *Node) Initialize(endSignal chan bool) {
 		panic("Unable to set host name")
 	}
 	n.setName(nodename)
-	
+
 	done := make(chan *Node)
 	go n.listen(done)
 	select {
