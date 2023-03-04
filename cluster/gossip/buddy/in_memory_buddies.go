@@ -6,14 +6,14 @@ import (
 )
 
 type InMemoryBuddies struct {
-	buddies     map[peer.Peer]bool
+	buddies     map[Buddy]bool
 	maxBuddyNum int
 	mu          sync.RWMutex
 }
 
 func CreateInMemoryBuddies(maxBuddyNum int) *InMemoryBuddies {
 	return &InMemoryBuddies{
-		buddies:     make(map[peer.Peer]bool),
+		buddies:     make(map[Buddy]bool),
 		maxBuddyNum: maxBuddyNum,
 	}
 }
@@ -28,14 +28,14 @@ func (b *InMemoryBuddies) Add(p peer.Peer) bool {
 	return true
 }
 
-func (b *InMemoryBuddies) All() map[peer.Peer]bool {
+func (b *InMemoryBuddies) AllBuddies() map[Buddy]bool {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
 	return b.buddies
 }
 
 func (b *InMemoryBuddies) Count() int {
-	buddies := b.All()
+	buddies := b.AllBuddies()
 	return len(buddies)
 }
 
@@ -44,7 +44,7 @@ func (b *InMemoryBuddies) IsEmpty() bool {
 }
 
 func (b *InMemoryBuddies) IsBuddyWith(p peer.Peer) bool {
-	buddies := b.All()
+	buddies := b.AllBuddies()
 	_, ok := buddies[p]
 	return ok
 }

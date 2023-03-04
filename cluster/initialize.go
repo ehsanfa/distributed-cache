@@ -35,7 +35,7 @@ func (n *Node) Initialize(endSignal chan bool) {
 	peer.track(peerInfo)
 
 	if !n.isSeeder {
-		n.introduce()
+		n.Introduce()
 	}
 
 	// time.Sleep(time.Second * 5)

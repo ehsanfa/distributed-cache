@@ -8,7 +8,8 @@ import (
 
 func TestPeer(t *testing.T) {
 	part := partition.CreateSimplePartition("120")
-	p := CreateLocalPeer("peer1", 12564, part)
+	p := CreateLocalPeer("peer1", 12564)
+	p.SetPartition(part)
 	if p.Name() != "peer1" {
 		t.Error("name doesn't match")
 	}
@@ -21,8 +22,8 @@ func TestPeer(t *testing.T) {
 		t.Error("partition doesn't match")
 	}
 
-	if !p.IsSameAs(CreateLocalPeer("peer1", 12564, part)) {
-		t.Error("should be equal to other partition")
+	if !p.IsSameAs(CreateLocalPeer("peer1", 12564)) {
+		t.Error("should be equal to other peer")
 	}
 }
 

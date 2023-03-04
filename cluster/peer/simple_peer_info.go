@@ -23,3 +23,7 @@ func (i SimplePeerInfo) Version() version.Version {
 func (i SimplePeerInfo) IsAlive() bool {
 	return i.isAlive
 }
+
+func (i SimplePeerInfo) MarshalBinary() (data []byte, err error) {
+	return []byte("sda"), nil
+}

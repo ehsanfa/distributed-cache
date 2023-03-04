@@ -54,13 +54,7 @@ func (n *Node) shareBuffer() {
 		}
 		go n.share(peer, req)
 	}
-	n.resetSharingBuffer()
-}
-
-func (n *Node) resetSharingBuffer() {
-	n.bufferMu.Lock()
-	n.buffer = *n.buffer.resetSharingBuffer()
-	n.bufferMu.Unlock()
+	n.buffer.Reset()
 }
 
 func (n *Node) handOverBuffer(req ShareBufferRequest) {

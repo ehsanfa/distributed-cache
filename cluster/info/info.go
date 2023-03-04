@@ -5,12 +5,19 @@ import (
 )
 
 type ClusterInfo interface {
-	Add(p peer.Peer, i peer.PeerInfo)
+	Get(peer.Peer) (peer.PeerInfo, bool)
+	Add(peer.Peer, peer.PeerInfo)
 	All() map[peer.Peer]peer.PeerInfo
-	IsPeerKnown(p peer.Peer) bool
-	IsPeerAlive(p peer.Peer) bool
+	IsPeerKnown(peer.Peer) bool
+	IsPeerAlive(peer.Peer) bool
 	List() []peer.Peer
-	Remove(p peer.Peer)
+	Remove(peer.Peer)
+	Replace(map[peer.Peer]peer.PeerInfo)
+	Update(map[peer.Peer]peer.PeerInfo)
+}
+
+type ClusterInfoProvider interface {
+	GetClusterInfo() map[peer.Peer]peer.PeerInfo
 }
 
 // func getPartitionPeers(p partition.Partition) []Peer {

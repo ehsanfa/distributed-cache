@@ -2,13 +2,22 @@ package peer
 
 import (
 	"dbcache/cluster/partition"
+	"encoding"
 )
 
 type Peer interface {
 	Name() string
-	Port() uint16
+	WithPort
 	Partition() partition.Partition
 	IsSameAs(peer Peer) bool
+	SetPartition(partition.Partition)
+	SetPort(uint16)
+	encoding.BinaryMarshaler
+	encoding.BinaryUnmarshaler
+}
+
+type WithPort interface {
+	Port() uint16
 }
 
 // func (n *Node) getPeersToShareBuffer() map[Peer]bool {

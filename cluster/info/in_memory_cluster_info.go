@@ -21,6 +21,10 @@ func (i *InMemoryClusterInfo) IsPeerKnown(p peer.Peer) bool {
 	return true
 }
 
+func (i *InMemoryClusterInfo) Get(p peer.Peer) (peer.PeerInfo, bool) {
+	return i.getInfo(p)
+}
+
 func (i *InMemoryClusterInfo) getInfo(p peer.Peer) (peer.PeerInfo, bool) {
 	i.mu.RLock()
 	v, ok := i.info[p]
@@ -61,4 +65,36 @@ func (i *InMemoryClusterInfo) Remove(p peer.Peer) {
 	i.mu.Lock()
 	delete(i.info, p)
 	i.mu.Unlock()
+}
+
+func (i *InMemoryClusterInfo) Replace(info map[peer.Peer]peer.PeerInfo) {
+	i.mu.Lock()
+	i.info = info
+	i.mu.Unlock()
+}
+
+func (i *InMemoryClusterInfo) Update(info map[peer.Peer]peer.PeerInfo) {
+	for peer, peerInfo := range info {
+
+		if _, ok := i.getInfo(peer); !ok {
+			i.Add(peer, peerInfo)
+			// peer.track(peerInfo)
+			// updatePartitionsInfo(peer, peerInfo)
+			continue
+		}
+
+		pi, _ := i.getInfo(peer)
+		if pi.Version().Number() < peerInfo.Version().Number() {
+			i.Add(peer, peerInfo)
+		}
+
+		// updatePartitionsInfo(peer, peerInfo)
+
+		// peer.track(peerInfo)
+
+	}
+}
+
+func (i *InMemoryClusterInfo) GetClusterInfo() map[peer.Peer]peer.PeerInfo {
+	return i.All()
 }

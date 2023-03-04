@@ -8,9 +8,12 @@ import (
 
 func TestBuddy(t *testing.T) {
 	part := partition.CreateSimplePartition("120")
-	peer1 := peer.CreateLocalPeer("peer1", 12564, part)
-	peer2 := peer.CreateLocalPeer("peer2", 12564, part)
-	peer3 := peer.CreateLocalPeer("peer3", 12564, part)
+	peer1 := peer.CreateLocalPeer("peer1", 12564)
+	peer1.SetPartition(part)
+	peer2 := peer.CreateLocalPeer("peer2", 12564)
+	peer2.SetPartition(part)
+	peer3 := peer.CreateLocalPeer("peer3", 12564)
+	peer3.SetPartition(part)
 	buddies := CreateInMemoryBuddies(2)
 	if !buddies.CanAcceptBuddyRequest() {
 		t.Error("can accept buddies failed")
@@ -28,7 +31,7 @@ func TestBuddy(t *testing.T) {
 		t.Error("can accept buddies failed")
 	}
 
-	all := buddies.All()
+	all := buddies.AllBuddies()
 	toCompare := map[peer.Peer]bool{peer1: true, peer2: true}
 	for peer := range all {
 		if _, ok := toCompare[peer]; !ok {

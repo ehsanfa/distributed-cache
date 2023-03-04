@@ -11,6 +11,11 @@ type Cache interface {
 	Delete(key string)
 }
 
+type CachStore interface {
+	GetCache() Cache
+	SetCache(Cache)
+}
+
 // type PutCacheResponse bool
 
 // type ShareCacheResposne struct {
