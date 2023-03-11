@@ -8,6 +8,7 @@ import (
 type PeerInfo interface {
 	Version() version.Version
 	IsAlive() bool
-	MarkAsDead() PeerInfo
+	MarkAsDead()
 	encoding.BinaryMarshaler
+	encoding.BinaryUnmarshaler
 }

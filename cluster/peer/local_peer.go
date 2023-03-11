@@ -12,8 +12,14 @@ type LocalPeer struct {
 	partition partition.Partition
 }
 
-func CreateLocalPeer(name string, port uint16) Peer {
-	return &LocalPeer{name: name, port: port}
+type marshalPeer struct {
+	Name      string
+	Port      uint16
+	Partition []byte
+}
+
+func CreateLocalPeer(name string, port uint16, part partition.Partition) Peer {
+	return &LocalPeer{name: name, port: port, partition: part}
 }
 
 func (p *LocalPeer) GetName() string {
@@ -55,20 +61,36 @@ func (p *LocalPeer) SetPort(port uint16) {
 func (p *LocalPeer) MarshalBinary() (data []byte, err error) {
 	var buf bytes.Buffer
 	enc := gob.NewEncoder(&buf)
-	if err := enc.Encode(p); err != nil {
+	if p.partition == nil {
+		panic("Empty partition")
+	}
+	mp, err := p.partition.MarshalBinary()
+	if err != nil {
+		return make([]byte, 0), err
+	}
+	if err := enc.Encode(marshalPeer{
+		Name:      p.name,
+		Port:      p.port,
+		Partition: mp,
+	}); err != nil {
 		return nil, err
 	}
 	return buf.Bytes(), nil
 }
 
 func (p *LocalPeer) UnmarshalBinary(data []byte) error {
-	l := &LocalPeer{}
+	m := &marshalPeer{}
 	reader := bytes.NewReader(data)
 	dec := gob.NewDecoder(reader)
-	if err := dec.Decode(&l); err != nil {
+	if err := dec.Decode(&m); err != nil {
 		return err
 	}
-	p.name = l.name
-	p.port = l.port
+	mp := partition.CreateSimplePartition("")
+	if e := mp.UnmarshalBinary(m.Partition); e != nil {
+		return e
+	}
+	p.name = m.Name
+	p.port = m.Port
+	p.partition = &mp
 	return nil
 }

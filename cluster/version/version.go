@@ -1,9 +1,13 @@
 package version
 
+import "encoding"
+
 type Version interface {
 	Number() uint64
 	Increment()
 	ReplaceWith(v2 Version)
+	encoding.BinaryMarshaler
+	encoding.BinaryUnmarshaler
 }
 
 // func (v1 *Version) replaceAndIncrement(v2 Version) {

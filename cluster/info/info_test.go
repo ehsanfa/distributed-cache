@@ -12,13 +12,13 @@ func TestInfo(t *testing.T) {
 	part := partition.CreateSimplePartition("part1")
 	version := version.CreateGenClockVersion()
 	peerInfo := peer.CreateSimplePeerInfo(version, true)
-	p := peer.CreateLocalPeer("peer1", 12564)
-	p.SetPartition(part)
+	p := peer.CreateLocalPeer("peer1", 12564, &part)
+	p.SetPartition(&part)
 	info.Add(p, peerInfo)
 
 	for peer1, peerInfo1 := range info.All() {
-		if !peer1.IsSameAs(peer.CreateLocalPeer("peer1", 12564)) {
-			t.Error("comparing all method failed peer", peer1, peer.CreateLocalPeer("peer1", 12564))
+		if !peer1.IsSameAs(peer.CreateLocalPeer("peer1", 12564, &part)) {
+			t.Error("comparing all method failed peer", peer1, peer.CreateLocalPeer("peer1", 12564, &part))
 		}
 		if peerInfo1 != peerInfo {
 			t.Error("comparing all method failed peerinfo", peerInfo1, peerInfo)
@@ -26,8 +26,8 @@ func TestInfo(t *testing.T) {
 	}
 
 	for _, peer1 := range info.List() {
-		if !peer1.IsSameAs(peer.CreateLocalPeer("peer1", 12564)) {
-			t.Error("comparing all method failed peer", peer1, peer.CreateLocalPeer("peer1", 12564))
+		if !peer1.IsSameAs(peer.CreateLocalPeer("peer1", 12564, &part)) {
+			t.Error("comparing all method failed peer", peer1, peer.CreateLocalPeer("peer1", 12564, &part))
 		}
 	}
 }
@@ -37,8 +37,7 @@ func TestIsPeerKnownAlive(t *testing.T) {
 	part := partition.CreateSimplePartition("part1")
 	version := version.CreateGenClockVersion()
 	peerInfo := peer.CreateSimplePeerInfo(version, true)
-	p := peer.CreateLocalPeer("peer1", 12564)
-	p.SetPartition(part)
+	p := peer.CreateLocalPeer("peer1", 12564, &part)
 	info.Add(p, peerInfo)
 
 	if !info.IsPeerKnown(p) {
@@ -63,10 +62,11 @@ func TestIsPeerKnownAlive(t *testing.T) {
 func TestUpdate(t *testing.T) {
 	info := CreateInMemoryClusterInfo()
 	peerInfo1 := peer.CreateSimplePeerInfo(version.CreateGenClockVersion(), true)
-	p1 := peer.CreateLocalPeer("peer1", 12564)
+	part := partition.CreateSimplePartition("part1")
+	p1 := peer.CreateLocalPeer("peer1", 12564, &part)
 	info.Add(p1, peerInfo1)
 	peerInfo2 := peer.CreateSimplePeerInfo(version.CreateGenClockVersion(), true)
-	p2 := peer.CreateLocalPeer("peer2", 12564)
+	p2 := peer.CreateLocalPeer("peer2", 12564, &part)
 	info.Update(map[peer.Peer]peer.PeerInfo{p2: peerInfo2})
 
 	if peerInfo1.Version().Number() != 0 || peerInfo2.Version().Number() != 0 {
