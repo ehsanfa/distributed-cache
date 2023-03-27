@@ -1,4 +1,4 @@
-package network
+package rpc
 
 func (n *RpcNode) Ping() (bool, error) {
 	var resp PingResponse

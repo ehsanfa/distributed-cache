@@ -2,7 +2,6 @@ package peer
 
 import (
 	"dbcache/cluster/partition"
-	"encoding"
 )
 
 type Peer interface {
@@ -12,8 +11,6 @@ type Peer interface {
 	IsSameAs(peer Peer) bool
 	SetPartition(partition.Partition)
 	SetPort(uint16)
-	encoding.BinaryMarshaler
-	encoding.BinaryUnmarshaler
 }
 
 type WithPort interface {

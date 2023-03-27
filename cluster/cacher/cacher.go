@@ -6,7 +6,7 @@ type Cache interface {
 	Set(key string, value CacheValue) error
 	All() map[string]CacheValue
 	Touch(key string)
-	Version(key string) CacheVersion
+	Version(key string) int
 	Replace(map[string]CacheValue)
 	Delete(key string)
 }

@@ -5,15 +5,15 @@ type Cachable interface {
 	GetValue() CacheValue
 }
 
-type CacheEntity struct {
-	Key   string
-	Value CacheValue
-}
+// type CacheEntity struct {
+// 	Key   string
+// 	Value CacheValue
+// }
 
-func (c *CacheEntity) GetKey() string {
-	return c.Key
-}
+// func (c *CacheEntity) GetKey() string {
+// 	return c.Key
+// }
 
-func (c *CacheEntity) GetValue() CacheValue {
-	return c.Value
-}
+// func (c *CacheEntity) GetValue() CacheValue {
+// 	return c.Value
+// }

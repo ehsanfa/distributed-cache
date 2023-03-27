@@ -33,18 +33,18 @@ func (c *InMemoryCache) All() map[string]CacheValue {
 func (c *InMemoryCache) Touch(key string) {
 	v, ok := c.Get(key)
 	if !ok {
-		v = NewCacheValue()
+		v = NewVersionBasedCacheValue("", 1)
 	}
-	v.Version = v.Version.touch()
+	v.IncrementVersion()
 	c.Set(key, v)
 }
 
-func (c *InMemoryCache) Version(key string) CacheVersion {
+func (c *InMemoryCache) Version(key string) int {
 	v, ok := c.Get(key)
 	if !ok {
 		return 0
 	}
-	return v.Version
+	return v.Version()
 }
 
 func (c *InMemoryCache) Replace(cache map[string]CacheValue) {
@@ -58,8 +58,8 @@ func (c *InMemoryCache) Delete(key string) {
 	if !ok {
 		return
 	}
-	v.Value = ""
-	v.Version = v.Version.touch()
+	v.SetValue("")
+	v.IncrementVersion()
 	c.Set(key, v)
 }
 

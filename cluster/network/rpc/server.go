@@ -1,7 +1,6 @@
-package network
+package rpc
 
 import (
-	"dbcache/cluster/info"
 	"dbcache/cluster/peer"
 	"fmt"
 	"log"
@@ -12,15 +11,13 @@ import (
 type rpcServer struct {
 	Peer peer.Peer
 	port uint16
-	info info.ClusterInfoProvider
 	kill chan bool
 }
 
-func (n *RpcNetwork) Serve(p peer.Peer, info info.ClusterInfoProvider) (peer.WithPort, error) {
+func (n *RpcNetwork) Serve(p peer.Peer) (peer.WithPort, error) {
 	ch := make(chan connRes)
 	kill := make(chan bool)
-	c := &rpcServer{Peer: p, info: info, kill: kill}
-	n.server = c
+	n.server = &rpcServer{Peer: p, kill: kill}
 
 	var err error
 	go n.server.initialize(p, ch)
@@ -29,8 +26,8 @@ func (n *RpcNetwork) Serve(p peer.Peer, info info.ClusterInfoProvider) (peer.Wit
 		return nil, res.err
 	}
 
-	c.port = res.port
-	return c, err
+	n.server.port = res.port
+	return n.server, err
 }
 
 type connRes struct {
@@ -55,21 +52,21 @@ func (s *rpcServer) initialize(p peer.Peer, channel chan<- connRes) {
 	}
 	channel <- connRes{true, extractPort(listener), err}
 
-	// for {
-	conn, err := listener.Accept()
+	for {
+		conn, err := listener.Accept()
 
-	if err != nil {
-		log.Print(err)
-		return
-		// break
+		if err != nil {
+			log.Print(err)
+			return
+			// break
+		}
+		go rpc.ServeConn(conn)
+		go func() {
+			<-s.kill
+			conn.Close()
+			listener.Close()
+		}()
 	}
-	go rpc.ServeConn(conn)
-	go func() {
-		<-s.kill
-		conn.Close()
-		listener.Close()
-	}()
-	// }
 }
 
 func extractPort(l net.Listener) uint16 {

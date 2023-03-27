@@ -29,7 +29,7 @@ func TestPeer(t *testing.T) {
 }
 
 func TestPeerInfo(t *testing.T) {
-	ver := version.CreateGenClockVersion()
+	ver := version.CreateGenClockVersion(0)
 	info := CreateSimplePeerInfo(ver, true)
 	if info.Version() != ver {
 		t.Error("versions don't match", info.Version(), ver)
@@ -69,7 +69,7 @@ func TestMarshalPeer(t *testing.T) {
 }
 
 func TestMarshalPeerInfo(t *testing.T) {
-	ver := version.CreateGenClockVersion()
+	ver := version.CreateGenClockVersion(0)
 	ver.Increment()
 	ver.Increment()
 	ver.Increment()

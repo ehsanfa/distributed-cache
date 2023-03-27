@@ -10,4 +10,5 @@ type Buffer interface {
 	All() map[string]cacher.CacheValue
 	Reset()
 	Size() int
+	Merge(Buffer)
 }

@@ -1,21 +1,27 @@
-package network
+package rpc
 
 import (
 	"bytes"
+	rpcPeer "dbcache/cluster/network/rpc/types/peer"
 	"dbcache/cluster/partition"
 	"dbcache/cluster/peer"
 	"dbcache/cluster/version"
 	"encoding/gob"
 )
 
-func (n *RpcNode) GetClusterInfo() (map[peer.Peer]peer.PeerInfo, error) {
-	resp := new(ClusterInfoResponse)
-	n.client.Call("RpcNetwork.RpcGetClusterInfo", struct{}{}, &resp)
-	return resp.ClusterInfo, nil
-}
-
 type ClusterInfoResponse struct {
 	ClusterInfo map[peer.Peer]peer.PeerInfo
+}
+
+func (n *RpcNode) GetClusterInfo() (map[peer.Peer]peer.PeerInfo, error) {
+	resp := new(ClusterInfoResponse)
+	err := n.client.Call("RpcNode.RpcGetClusterInfo", struct{}{}, &resp)
+	return resp.ClusterInfo, err
+}
+
+func (n *RpcNode) RpcGetClusterInfo(p struct{}, resp *ClusterInfoResponse) error {
+	*resp = ClusterInfoResponse{hostNetwork.info.GetClusterInfo()}
+	return nil
 }
 
 type marshalClusterInfoResponse struct {
@@ -30,11 +36,13 @@ type marshalClusterInfo struct {
 func (c *ClusterInfoResponse) MarshalBinary() (data []byte, err error) {
 	var mcir []marshalClusterInfo
 	for p, pi := range c.ClusterInfo {
-		mp, err := p.MarshalBinary()
+		rpcp := rpcPeer.Peer{Peer: p}
+		mp, err := rpcp.MarshalBinary()
 		if err != nil {
 			return make([]byte, 0), err
 		}
-		mpi, err := pi.MarshalBinary()
+		rpcpi := rpcPeer.PeerInfo{Pi: pi}
+		mpi, err := rpcpi.MarshalBinary()
 		if err != nil {
 			return make([]byte, 0), err
 		}
@@ -60,25 +68,21 @@ func (c *ClusterInfoResponse) UnmarshalBinary(data []byte) error {
 		return err
 	}
 	parts := partition.CreateSimplePartition("")
-	ps := peer.CreateLocalPeer("hasan", 0, &parts)
-	vers := version.CreateGenClockVersion()
+	ps := rpcPeer.Peer{Peer: peer.CreateLocalPeer("", 0, &parts)}
+	vers := version.CreateGenClockVersion(0)
 	pis := peer.CreateSimplePeerInfo(vers, true)
 	for _, v := range mcir.Response {
 		if e := ps.UnmarshalBinary(v.Peer); e != nil {
 			return e
 		}
-		if e := pis.UnmarshalBinary(v.PeerInfo); e != nil {
+		rpcpi := rpcPeer.PeerInfo{Pi: pis}
+		if e := rpcpi.UnmarshalBinary(v.PeerInfo); e != nil {
 			return e
 		}
-		a := peer.CreateLocalPeer(ps.Name(), ps.Port(), ps.Partition())
+		a := peer.CreateLocalPeer(ps.Peer.Name(), ps.Peer.Port(), ps.Peer.Partition())
 		b := peer.CreateSimplePeerInfo(pis.Version(), pis.IsAlive())
 		r[a] = b
 	}
 	c.ClusterInfo = r
-	return nil
-}
-
-func (n *RpcNetwork) RpcGetClusterInfo(p struct{}, resp *ClusterInfoResponse) error {
-	*resp = ClusterInfoResponse{n.server.info.GetClusterInfo()}
 	return nil
 }

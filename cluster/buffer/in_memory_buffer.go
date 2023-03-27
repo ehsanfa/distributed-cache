@@ -13,6 +13,19 @@ type InMemoryBuffer struct {
 	mu            sync.RWMutex
 }
 
+type cachable struct {
+	key   string
+	value cacher.CacheValue
+}
+
+func (c *cachable) GetKey() string {
+	return c.key
+}
+
+func (c *cachable) GetValue() cacher.CacheValue {
+	return c.value
+}
+
 func CreateInMemoryBuffer() *InMemoryBuffer {
 	return &InMemoryBuffer{}
 }
@@ -54,4 +67,10 @@ func (b *InMemoryBuffer) Size() int {
 	c := b.internal.Count()
 	b.mu.RUnlock()
 	return c
+}
+
+func (b *InMemoryBuffer) Merge(source Buffer) {
+	for k, v := range source.All() {
+		b.Add(&cachable{k, v})
+	}
 }
