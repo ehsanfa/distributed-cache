@@ -37,13 +37,13 @@ func (b *InMemoryBuffer) IsEmpty() bool {
 	return isEmpty
 }
 
-func (b *InMemoryBuffer) Add(c cacher.Cachable) {
+func (b *InMemoryBuffer) Add(k string, v cacher.CacheValue) {
 	b.mu.Lock()
-	b.internal.Append(c)
+	b.internal.Append(cachable{k, v})
 	if b.sharingBuffer == nil {
 		b.sharingBuffer = make(map[string]cacher.CacheValue)
 	}
-	b.sharingBuffer[c.GetKey()] = c.GetValue()
+	b.sharingBuffer[k] = v
 	b.mu.Unlock()
 }
 
@@ -71,6 +71,6 @@ func (b *InMemoryBuffer) Size() int {
 
 func (b *InMemoryBuffer) Merge(source Buffer) {
 	for k, v := range source.All() {
-		b.Add(&cachable{k, v})
+		b.Add(k, v)
 	}
 }

@@ -6,7 +6,7 @@ import (
 
 type Buffer interface {
 	IsEmpty() bool
-	Add(c cacher.Cachable)
+	Add(string, cacher.CacheValue)
 	All() map[string]cacher.CacheValue
 	Reset()
 	Size() int

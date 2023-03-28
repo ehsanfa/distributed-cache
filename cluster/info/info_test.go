@@ -10,7 +10,7 @@ import (
 func TestInfo(t *testing.T) {
 	info := CreateInMemoryClusterInfo()
 	part := partition.CreateSimplePartition("part1")
-	version := version.CreateGenClockVersion()
+	version := version.CreateGenClockVersion(0)
 	peerInfo := peer.CreateSimplePeerInfo(version, true)
 	p := peer.CreateLocalPeer("peer1", 12564, &part)
 	p.SetPartition(&part)
@@ -35,7 +35,7 @@ func TestInfo(t *testing.T) {
 func TestIsPeerKnownAlive(t *testing.T) {
 	info := CreateInMemoryClusterInfo()
 	part := partition.CreateSimplePartition("part1")
-	version := version.CreateGenClockVersion()
+	version := version.CreateGenClockVersion(0)
 	peerInfo := peer.CreateSimplePeerInfo(version, true)
 	p := peer.CreateLocalPeer("peer1", 12564, &part)
 	info.Add(p, peerInfo)
@@ -61,18 +61,18 @@ func TestIsPeerKnownAlive(t *testing.T) {
 
 func TestUpdate(t *testing.T) {
 	info := CreateInMemoryClusterInfo()
-	peerInfo1 := peer.CreateSimplePeerInfo(version.CreateGenClockVersion(), true)
+	peerInfo1 := peer.CreateSimplePeerInfo(version.CreateGenClockVersion(0), true)
 	part := partition.CreateSimplePartition("part1")
 	p1 := peer.CreateLocalPeer("peer1", 12564, &part)
 	info.Add(p1, peerInfo1)
-	peerInfo2 := peer.CreateSimplePeerInfo(version.CreateGenClockVersion(), true)
+	peerInfo2 := peer.CreateSimplePeerInfo(version.CreateGenClockVersion(0), true)
 	p2 := peer.CreateLocalPeer("peer2", 12564, &part)
 	info.Update(map[peer.Peer]peer.PeerInfo{p2: peerInfo2})
 
 	if peerInfo1.Version().Number() != 0 || peerInfo2.Version().Number() != 0 {
 		t.Error("initial versions don't match", peerInfo2.Version().Number())
 	}
-	newPeerInfo := peer.CreateSimplePeerInfo(version.CreateGenClockVersion(), true)
+	newPeerInfo := peer.CreateSimplePeerInfo(version.CreateGenClockVersion(0), true)
 	newPeerInfo.Version().Increment()
 	newPeerInfo.Version().Increment()
 	newPeerInfo.Version().Increment()
@@ -82,7 +82,7 @@ func TestUpdate(t *testing.T) {
 		t.Error("updated versions don't match", res.Version().Number(), newPeerInfo.Version().Number())
 	}
 
-	outdatedPeerInfo := peer.CreateSimplePeerInfo(version.CreateGenClockVersion(), true)
+	outdatedPeerInfo := peer.CreateSimplePeerInfo(version.CreateGenClockVersion(0), true)
 	info.Update(map[peer.Peer]peer.PeerInfo{p2: outdatedPeerInfo})
 	res, _ = info.Get(p2)
 	if res.Version().Number() == outdatedPeerInfo.Version().Number() {
