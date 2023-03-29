@@ -8,20 +8,22 @@ import (
 	"dbcache/cluster/peer"
 	"dbcache/cluster/version"
 	"testing"
+	"time"
 )
 
 func TestWithRandomPort(t *testing.T) {
 	part := partition.CreateSimplePartition("0")
 	p := peer.CreateLocalPeer("0.0.0.0", 0, &part)
 	i := info.CreateInMemoryClusterInfo()
-	cache := cacheProvider{cacher.CreateInMemoryCache()}
+	cache := cacher.CreateInMemoryCache()
 	buff := buffer.CreateInMemoryBuffer()
-	network, err := CreateRpcNetwork(p, i, &cache, buff)
+	network, err := CreateRpcNetwork(p, i, cache, buff)
 	if err != nil {
 		t.Error(err)
 	}
+	p = network.Peer()
 
-	n, err := network.Connect(p)
+	n, err := network.Connect(p, 10*time.Second)
 	if err != nil {
 		t.Error(err)
 	}
@@ -51,7 +53,7 @@ func TestGetClusterInfo(t *testing.T) {
 		cache1 := cacher.CreateInMemoryCache()
 		buff1 := buffer.CreateInMemoryBuffer()
 
-		_, err := CreateRpcNetwork(p, i, &cacheProvider{cache1}, buff1)
+		_, err := CreateRpcNetwork(p, i, cache1, buff1)
 		if err != nil {
 			t.Error(err)
 		}
@@ -61,11 +63,11 @@ func TestGetClusterInfo(t *testing.T) {
 	i2 := info.CreateInMemoryClusterInfo()
 	cache2 := cacher.CreateInMemoryCache()
 	buff2 := buffer.CreateInMemoryBuffer()
-	network, _ := CreateRpcNetwork(p2, i2, &cacheProvider{cache2}, buff2)
+	network, _ := CreateRpcNetwork(p2, i2, cache2, buff2)
 
 	server := peer.CreateLocalPeer("0.0.0.0", 5666, &part)
 
-	n, err := network.Connect(server)
+	n, err := network.Connect(server, 10*time.Second)
 	if err != nil {
 		t.Error(err)
 	}
@@ -93,14 +95,15 @@ func TestGetClusterInfoTwo(t *testing.T) {
 	cache := cacher.CreateInMemoryCache()
 	buff := buffer.CreateInMemoryBuffer()
 
-	network, err := CreateRpcNetwork(p, i, &cacheProvider{cache}, buff)
+	network, err := CreateRpcNetwork(p, i, cache, buff)
 	if err != nil {
 		t.Error(err)
 	}
+	p = network.Peer()
 
 	server := peer.CreateLocalPeer(p.Name(), p.Port(), p.Partition())
 
-	n, err := network.Connect(server)
+	n, err := network.Connect(server, 10*time.Second)
 	if err != nil {
 		t.Error(err)
 	}
@@ -121,12 +124,12 @@ func TestWithSpecificPort(t *testing.T) {
 	i := info.CreateInMemoryClusterInfo()
 	cache := cacher.CreateInMemoryCache()
 	buff := buffer.CreateInMemoryBuffer()
-	network, err := CreateRpcNetwork(p, i, &cacheProvider{cache}, buff)
+	network, err := CreateRpcNetwork(p, i, cache, buff)
 	t.Log(p.Port())
 	if err != nil {
 		t.Error(err)
 	}
-	n, err := network.Connect(p)
+	n, err := network.Connect(p, 10*time.Second)
 	if err != nil {
 		t.Error(err)
 	}
@@ -143,18 +146,6 @@ func TestWithSpecificPort(t *testing.T) {
 	}
 	// t.Error(p.Port())
 	t.Cleanup(network.Kill)
-}
-
-type cacheProvider struct {
-	cache cacher.Cache
-}
-
-func (c *cacheProvider) GetCache() map[string]cacher.CacheValue {
-	t := make(map[string]cacher.CacheValue)
-	for k, v := range c.cache.All() {
-		t[k] = v
-	}
-	return t
 }
 
 func TestGetCache(t *testing.T) {
@@ -175,7 +166,7 @@ func TestGetCache(t *testing.T) {
 
 		buff := buffer.CreateInMemoryBuffer()
 
-		_, err := CreateRpcNetwork(p, i, &cacheProvider{cache1}, buff)
+		_, err := CreateRpcNetwork(p, i, cache1, buff)
 		if err != nil {
 			t.Error(err)
 		}
@@ -185,11 +176,11 @@ func TestGetCache(t *testing.T) {
 	i2 := info.CreateInMemoryClusterInfo()
 	cache2 := cacher.CreateInMemoryCache()
 	buff := buffer.CreateInMemoryBuffer()
-	network, _ := CreateRpcNetwork(p2, i2, &cacheProvider{cache2}, buff)
+	network, _ := CreateRpcNetwork(p2, i2, cache2, buff)
 
 	server := peer.CreateLocalPeer("0.0.0.0", 5667, &part)
 
-	n, err := network.Connect(server)
+	n, err := network.Connect(server, 10*time.Second)
 	if err != nil {
 		t.Error(err)
 	}

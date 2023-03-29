@@ -26,7 +26,7 @@ func (n *RpcNode) GetCache() (map[string]cacher.CacheValue, error) {
 }
 
 func (n *RpcNode) RpcGetCache(p struct{}, resp *GetCacheResponse) error {
-	*resp = GetCacheResponse{hostNetwork.cache.GetCache()}
+	*resp = GetCacheResponse{hostNetwork.cache.All()}
 	return nil
 }
 

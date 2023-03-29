@@ -1,4 +1,4 @@
-package buddy
+package innercircle
 
 import (
 	"dbcache/cluster/peer"
@@ -6,20 +6,20 @@ import (
 )
 
 type InMemoryBuddies struct {
-	buddies     map[Buddy]bool
+	buddies     map[peer.Peer]bool
 	maxBuddyNum int
 	mu          sync.RWMutex
 }
 
 func CreateInMemoryBuddies(maxBuddyNum int) *InMemoryBuddies {
 	return &InMemoryBuddies{
-		buddies:     make(map[Buddy]bool),
+		buddies:     make(map[peer.Peer]bool),
 		maxBuddyNum: maxBuddyNum,
 	}
 }
 
 func (b *InMemoryBuddies) Add(p peer.Peer) bool {
-	if !b.CanAcceptBuddyRequest() {
+	if !b.canAcceptBuddyRequest() || b.isBuddyWith(p) {
 		return false
 	}
 	b.mu.Lock()
@@ -28,14 +28,14 @@ func (b *InMemoryBuddies) Add(p peer.Peer) bool {
 	return true
 }
 
-func (b *InMemoryBuddies) AllBuddies() map[Buddy]bool {
+func (b *InMemoryBuddies) All() map[peer.Peer]bool {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
 	return b.buddies
 }
 
 func (b *InMemoryBuddies) Count() int {
-	buddies := b.AllBuddies()
+	buddies := b.All()
 	return len(buddies)
 }
 
@@ -43,13 +43,13 @@ func (b *InMemoryBuddies) IsEmpty() bool {
 	return b.Count() == 0
 }
 
-func (b *InMemoryBuddies) IsBuddyWith(p peer.Peer) bool {
-	buddies := b.AllBuddies()
+func (b *InMemoryBuddies) isBuddyWith(p peer.Peer) bool {
+	buddies := b.All()
 	_, ok := buddies[p]
 	return ok
 }
 
-func (b *InMemoryBuddies) CanAcceptBuddyRequest() bool {
+func (b *InMemoryBuddies) canAcceptBuddyRequest() bool {
 	return b.Count() < b.maxBuddyNum
 }
 

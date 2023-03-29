@@ -14,13 +14,13 @@ type rpcServer struct {
 	kill chan bool
 }
 
-func (n *RpcNetwork) Serve(p peer.Peer) (peer.WithPort, error) {
+func (n *RpcNetwork) serve() (peer.WithPort, error) {
 	ch := make(chan connRes)
 	kill := make(chan bool)
-	n.server = &rpcServer{Peer: p, kill: kill}
+	n.server = &rpcServer{Peer: n.p, kill: kill}
 
 	var err error
-	go n.server.initialize(p, ch)
+	go n.server.initialize(n.p, ch)
 	res := <-ch
 	if res.err != nil {
 		return nil, res.err

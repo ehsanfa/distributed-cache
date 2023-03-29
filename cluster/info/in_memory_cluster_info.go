@@ -76,7 +76,7 @@ func (i *InMemoryClusterInfo) Replace(info map[peer.Peer]peer.PeerInfo) {
 func (i *InMemoryClusterInfo) Update(info map[peer.Peer]peer.PeerInfo) {
 	for peer, peerInfo := range info {
 
-		if _, ok := i.getInfo(peer); !ok {
+		if !i.IsPeerAlive(peer) {
 			i.Add(peer, peerInfo)
 			// peer.track(peerInfo)
 			// updatePartitionsInfo(peer, peerInfo)

@@ -9,8 +9,8 @@ type Peer interface {
 	WithPort
 	Partition() partition.Partition
 	IsSameAs(peer Peer) bool
-	SetPartition(partition.Partition)
-	SetPort(uint16)
+	SetPartition(partition.Partition) Peer
+	SetPort(uint16) Peer
 }
 
 type WithPort interface {

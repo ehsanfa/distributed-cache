@@ -1,4 +1,4 @@
-package buddy
+package innercircle
 
 import (
 	"dbcache/cluster/partition"
@@ -6,16 +6,13 @@ import (
 	"testing"
 )
 
-func TestBuddy(t *testing.T) {
+func TestInnerCircle(t *testing.T) {
 	part := partition.CreateSimplePartition("120")
-	peer1 := peer.CreateLocalPeer("peer1", 12564)
-	peer1.SetPartition(part)
-	peer2 := peer.CreateLocalPeer("peer2", 12564)
-	peer2.SetPartition(part)
-	peer3 := peer.CreateLocalPeer("peer3", 12564)
-	peer3.SetPartition(part)
+	peer1 := peer.CreateLocalPeer("peer1", 12564, part)
+	peer2 := peer.CreateLocalPeer("peer2", 12564, part)
+	peer3 := peer.CreateLocalPeer("peer3", 12564, part)
 	buddies := CreateInMemoryBuddies(2)
-	if !buddies.CanAcceptBuddyRequest() {
+	if !buddies.canAcceptBuddyRequest() {
 		t.Error("can accept buddies failed")
 	}
 	if !buddies.Add(peer1) {
@@ -27,11 +24,11 @@ func TestBuddy(t *testing.T) {
 	if buddies.Add(peer3) {
 		t.Error("adding a new buddy failed")
 	}
-	if buddies.CanAcceptBuddyRequest() {
+	if buddies.canAcceptBuddyRequest() {
 		t.Error("can accept buddies failed")
 	}
 
-	all := buddies.AllBuddies()
+	all := buddies.All()
 	toCompare := map[peer.Peer]bool{peer1: true, peer2: true}
 	for peer := range all {
 		if _, ok := toCompare[peer]; !ok {
@@ -54,7 +51,7 @@ func TestBuddy(t *testing.T) {
 	}
 
 	buddies.Add(peer3)
-	if !buddies.IsBuddyWith(peer3) {
+	if !buddies.isBuddyWith(peer3) {
 		t.Error("isbuddywith method failed")
 	}
 }

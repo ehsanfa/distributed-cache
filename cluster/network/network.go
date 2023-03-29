@@ -1,12 +1,12 @@
 package network
 
 import (
-	"dbcache/cluster/info"
 	"dbcache/cluster/peer"
+	"time"
 )
 
 type Network interface {
-	Connect(peer.Peer) Node
-	Serve(p peer.Peer, info info.ClusterInfoProvider) (peer.WithPort, error)
+	Connect(peer peer.Peer, timeout time.Duration) (Node, error)
+	Peer() peer.Peer
 	Kill()
 }
