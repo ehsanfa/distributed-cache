@@ -5,13 +5,15 @@ import (
 	"dbcache/cluster/info"
 	"dbcache/cluster/network"
 	"dbcache/cluster/peer"
+	"fmt"
 	"time"
 )
 
 type Seeder peer.Peer
 
 const maxBuddyNum = 3
-const interval = 1 * time.Second
+const gossipInterval = 1 * time.Second
+const minglingInterval = 1 * time.Second
 const timeout = 5 * time.Second
 
 type Gossip struct {
@@ -20,25 +22,34 @@ type Gossip struct {
 	inner_cirlce innercircle.InnerCircle
 }
 
-func CreateGossipNetwork(network network.Network, info info.ClusterInfo, seeder peer.Peer) *Gossip {
+func CreateGossipNetwork(
+	network network.Network,
+	info info.ClusterInfo,
+	seeder peer.Peer,
+	isSeeder bool,
+) (*Gossip, error) {
+	if seeder == nil && !isSeeder {
+		return nil, fmt.Errorf("Seeder cannot be nil when the node itself is not a seeder")
+	}
 	inner_cirle := innercircle.CreateInMemoryBuddies(maxBuddyNum)
-	inner_cirle.Add(seeder)
-	return &Gossip{network, info, inner_cirle}
+	if ok := inner_cirle.Add(seeder); !ok {
+		return nil, fmt.Errorf("failed to add the seeder to the inner circle")
+	}
+	return &Gossip{network, info, inner_cirle}, nil
 }
 
 func (g *Gossip) Start() {
-	timer := time.NewTicker(interval)
+	gossipTimer := time.NewTicker(gossipInterval)
+	minglingInterval := time.NewTicker(minglingInterval)
 	go func() {
 		for {
-			<-timer.C
-			g.spawn()
+			select {
+			case <-gossipTimer.C:
+				g.spawn()
+			case <-minglingInterval.C:
+				g.mingle()
+			}
 		}
-		// for {
-		// select {
-		// case <-timer.C:
-		// 	g.spawn()
-		// }
-		// }
 	}()
 }
 
@@ -63,4 +74,12 @@ func (g *Gossip) gossip(p peer.Peer) {
 
 func (g *Gossip) gossipFailed(p peer.Peer, err error) {
 	panic(err)
+}
+
+func (g *Gossip) mingle() {
+	i := make(map[peer.Peer]bool)
+	for p := range g.info.All() {
+		i[p] = true
+	}
+	g.inner_cirlce.Shuffle(i)
 }

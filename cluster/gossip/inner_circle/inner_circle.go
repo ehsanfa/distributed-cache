@@ -10,4 +10,6 @@ type InnerCircle interface {
 	Count() int
 	IsEmpty() bool
 	Remove(peer.Peer)
+	Diff(map[peer.Peer]bool) map[peer.Peer]bool
+	Shuffle(map[peer.Peer]bool)
 }

@@ -3,7 +3,6 @@ package rpc
 import (
 	"bytes"
 	rpcPeer "dbcache/cluster/network/rpc/types/peer"
-	"dbcache/cluster/partition"
 	"dbcache/cluster/peer"
 	"dbcache/cluster/version"
 	"encoding/gob"
@@ -67,8 +66,7 @@ func (c *ClusterInfoResponse) UnmarshalBinary(data []byte) error {
 	if err := dec.Decode(&mcir); err != nil {
 		return err
 	}
-	parts := partition.CreateSimplePartition("")
-	ps := rpcPeer.Peer{Peer: peer.CreateLocalPeer("", 0, &parts)}
+	ps := rpcPeer.Peer{Peer: peer.CreateLocalPeer("", 0)}
 	vers := version.CreateGenClockVersion(0)
 	pis := peer.CreateSimplePeerInfo(vers, true)
 	for _, v := range mcir.Response {
@@ -79,7 +77,8 @@ func (c *ClusterInfoResponse) UnmarshalBinary(data []byte) error {
 		if e := rpcpi.UnmarshalBinary(v.PeerInfo); e != nil {
 			return e
 		}
-		a := peer.CreateLocalPeer(ps.Peer.Name(), ps.Peer.Port(), ps.Peer.Partition())
+		a := peer.CreateLocalPeer(ps.Peer.Name(), ps.Peer.Port())
+		a = a.SetPartition(ps.Peer.Partition())
 		b := peer.CreateSimplePeerInfo(pis.Version(), pis.IsAlive())
 		r[a] = b
 	}

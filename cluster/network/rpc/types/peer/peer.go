@@ -50,6 +50,7 @@ func (p *Peer) UnmarshalBinary(data []byte) error {
 	if e := mp.UnmarshalBinary(m.Partition); e != nil {
 		return e
 	}
-	p.Peer = peer.CreateLocalPeer(m.Name, m.Port, mp.Part)
+	p.Peer = peer.CreateLocalPeer(m.Name, m.Port)
+	p.Peer.SetPartition(mp.Part)
 	return nil
 }

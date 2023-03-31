@@ -10,8 +10,8 @@ type LocalPeer struct {
 	partition partition.Partition
 }
 
-func CreateLocalPeer(name string, port uint16, part partition.Partition) Peer {
-	return LocalPeer{name: name, port: port, partition: part}
+func CreateLocalPeer(name string, port uint16) Peer {
+	return LocalPeer{name: name, port: port}
 }
 
 func (p LocalPeer) Name() string {

@@ -13,18 +13,21 @@ import (
 	"time"
 )
 
-func TestGetsInfoFromSeeder(t *testing.T) {
+func TestGetsInfoFromSeederWhenInitialized(t *testing.T) {
 	part := partition.CreateSimplePartition("0")
 	cache := cacher.CreateInMemoryCache()
 	buff := buffer.CreateInMemoryBuffer()
 	seederPort := 45654
 	go func() {
-		seeder := peer.CreateLocalPeer("0.0.0.0", uint16(seederPort), &part)
-		peer2 := peer.CreateLocalPeer("0.0.0.0", 45656, &part)
+		seeder := peer.CreateLocalPeer("0.0.0.0", uint16(seederPort))
+		peer2 := peer.CreateLocalPeer("0.0.0.0", 45656)
+		peer2 = peer2.SetPartition(part)
 		peer2Info := peer.CreateSimplePeerInfo(version.CreateGenClockVersion(1), true)
-		peer3 := peer.CreateLocalPeer("0.0.0.0", 45657, &part)
+		peer3 := peer.CreateLocalPeer("0.0.0.0", 45657)
+		peer3 = peer3.SetPartition(part)
 		peer3Info := peer.CreateSimplePeerInfo(version.CreateGenClockVersion(1), true)
-		peer4 := peer.CreateLocalPeer("0.0.0.0", 45658, &part)
+		peer4 := peer.CreateLocalPeer("0.0.0.0", 45658)
+		peer4 = peer4.SetPartition(part)
 		peer4Info := peer.CreateSimplePeerInfo(version.CreateGenClockVersion(1), true)
 
 		seederInfo := info.CreateInMemoryClusterInfo()
@@ -37,7 +40,7 @@ func TestGetsInfoFromSeeder(t *testing.T) {
 		}
 	}()
 
-	peer1 := peer.CreateLocalPeer("0.0.0.0", 45655, &part)
+	peer1 := peer.CreateLocalPeer("0.0.0.0", 45655)
 
 	info1 := info.CreateInMemoryClusterInfo()
 	network1, err := rpc.CreateRpcNetwork(peer1, info1, cache, buff)
@@ -45,25 +48,52 @@ func TestGetsInfoFromSeeder(t *testing.T) {
 		t.Error(err)
 	}
 
-	seeder := peer.CreateLocalPeer("0.0.0.0", uint16(seederPort), &part)
-	n, err := network1.Connect(seeder, 10*time.Second)
-	if err != nil {
-		t.Error(err)
-	}
-	resp, err := n.GetClusterInfo()
-	if err != nil {
-		t.Error(err)
-	}
-	if len(resp) != 3 {
-		t.Error("size doesn't match")
-	}
+	seeder := peer.CreateLocalPeer("0.0.0.0", uint16(seederPort))
 
-	gossip := CreateGossipNetwork(network1, info1, seeder)
+	gossip, err := CreateGossipNetwork(network1, info1, seeder, false)
+	if err != nil {
+		t.Error(err)
+	}
 	log.Printf("info in test: %p", info1)
 	gossip.Start()
 	log.Println("sleeping")
-	time.Sleep(interval + 2*time.Second)
-	if ok := info1.IsPeerKnown(peer.CreateLocalPeer("0.0.0.0", 45658, part)); !ok {
+	time.Sleep(gossipInterval + 2*time.Second)
+	if ok := info1.IsPeerKnown(peer.CreateLocalPeer("0.0.0.0", 45658)); !ok {
 		t.Error("expected to receive cluster info")
 	}
 }
+
+func TestFailsWhenNoSeeder(t *testing.T) {
+	peer1 := peer.CreateLocalPeer("0.0.0.0", 45659)
+	info1 := info.CreateInMemoryClusterInfo()
+	cache1 := cacher.CreateInMemoryCache()
+	buff1 := buffer.CreateInMemoryBuffer()
+	network1, err := rpc.CreateRpcNetwork(peer1, info1, cache1, buff1)
+	if err != nil {
+		t.Error(err)
+	}
+	if _, err := CreateGossipNetwork(network1, info1, nil, false); err == nil {
+		t.Error("expected to see error")
+	}
+}
+
+func TestSeederStandalone(t *testing.T) {
+	peer1 := peer.CreateLocalPeer("0.0.0.0", 45659)
+	info1 := info.CreateInMemoryClusterInfo()
+	cache1 := cacher.CreateInMemoryCache()
+	buff1 := buffer.CreateInMemoryBuffer()
+	network1, err := rpc.CreateRpcNetwork(peer1, info1, cache1, buff1)
+	if err != nil {
+		t.Error(err)
+	}
+	gossip, err := CreateGossipNetwork(network1, info1, nil, true)
+	if err != nil {
+		t.Error(err)
+	}
+
+	gossip.Start()
+}
+
+// func TestInfoIsUpdatedWhenNodeIsDead() {
+
+// }

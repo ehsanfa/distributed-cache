@@ -1,16 +1,14 @@
 package innercircle
 
 import (
-	"dbcache/cluster/partition"
 	"dbcache/cluster/peer"
 	"testing"
 )
 
 func TestInnerCircle(t *testing.T) {
-	part := partition.CreateSimplePartition("120")
-	peer1 := peer.CreateLocalPeer("peer1", 12564, part)
-	peer2 := peer.CreateLocalPeer("peer2", 12564, part)
-	peer3 := peer.CreateLocalPeer("peer3", 12564, part)
+	peer1 := peer.CreateLocalPeer("peer1", 12564)
+	peer2 := peer.CreateLocalPeer("peer2", 12564)
+	peer3 := peer.CreateLocalPeer("peer3", 12564)
 	buddies := CreateInMemoryBuddies(2)
 	if !buddies.canAcceptBuddyRequest() {
 		t.Error("can accept buddies failed")
@@ -53,5 +51,76 @@ func TestInnerCircle(t *testing.T) {
 	buddies.Add(peer3)
 	if !buddies.isBuddyWith(peer3) {
 		t.Error("isbuddywith method failed")
+	}
+}
+
+func TestReplace(t *testing.T) {
+	peer1 := peer.CreateLocalPeer("peer1", 12564)
+	peer2 := peer.CreateLocalPeer("peer2", 12564)
+	peer3 := peer.CreateLocalPeer("peer3", 12564)
+	buddies := CreateInMemoryBuddies(3)
+	buddies.Add(peer1)
+	buddies.Add(peer2)
+	buddies.Add(peer3)
+	peer4 := peer.CreateLocalPeer("peer4", 12564)
+	buddies.Replace(peer1, peer4)
+	if buddies.isBuddyWith(peer1) {
+		t.Error("expected not to be buddy with", peer1)
+	}
+
+	if !buddies.isBuddyWith(peer4) {
+		t.Error("expected to be buddy with", peer4)
+	}
+}
+
+func TestShuffle(t *testing.T) {
+	peer1 := peer.CreateLocalPeer("peer1", 12564)
+	peer2 := peer.CreateLocalPeer("peer2", 12564)
+	peer3 := peer.CreateLocalPeer("peer3", 12564)
+	buddies := CreateInMemoryBuddies(3)
+	buddies.Add(peer1)
+	buddies.Add(peer2)
+	buddies.Add(peer3)
+
+	peer4 := peer.CreateLocalPeer("peer4", 12564)
+	peer5 := peer.CreateLocalPeer("peer5", 12564)
+	peer6 := peer.CreateLocalPeer("peer6", 12564)
+	peer7 := peer.CreateLocalPeer("peer7", 12564)
+	peer8 := peer.CreateLocalPeer("peer8", 12564)
+	info := map[peer.Peer]bool{peer1: true, peer2: true, peer3: true, peer4: true, peer5: true, peer6: true, peer7: true, peer8: true}
+	buddies.Shuffle(info)
+	if buddies.isBuddyWith(peer1) {
+		t.Error("expected not to be buddy with peers", peer1)
+	}
+
+	if buddies.isBuddyWith(peer2) {
+		t.Error("expected not to be buddy with peers", peer2)
+	}
+
+	if buddies.isBuddyWith(peer3) {
+		t.Error("expected not to be buddy with peers", peer3)
+	}
+
+	if buddies.Count() != 3 {
+		t.Errorf("expected to have %d buddies", 3)
+	}
+}
+
+func TestShuffleWhenMaxNumIsNotMet(t *testing.T) {
+	peer1 := peer.CreateLocalPeer("peer1", 12564)
+	peer2 := peer.CreateLocalPeer("peer2", 12564)
+	peer3 := peer.CreateLocalPeer("peer3", 12564)
+	buddies := CreateInMemoryBuddies(5)
+	buddies.Add(peer1)
+	buddies.Add(peer2)
+	buddies.Add(peer3)
+	peer4 := peer.CreateLocalPeer("peer4", 12564)
+	info := map[peer.Peer]bool{peer1: true, peer2: true, peer3: true, peer4: true}
+	buddies.Shuffle(info)
+	if buddies.Count() != 4 {
+		t.Errorf("expected to have %d buddies but has %d", 4, buddies.Count())
+	}
+	if !buddies.isBuddyWith(peer4) {
+		t.Errorf("expected to be buddy with %s", peer4)
 	}
 }

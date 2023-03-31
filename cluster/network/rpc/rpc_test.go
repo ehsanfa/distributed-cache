@@ -12,8 +12,7 @@ import (
 )
 
 func TestWithRandomPort(t *testing.T) {
-	part := partition.CreateSimplePartition("0")
-	p := peer.CreateLocalPeer("0.0.0.0", 0, &part)
+	p := peer.CreateLocalPeer("0.0.0.0", 0)
 	i := info.CreateInMemoryClusterInfo()
 	cache := cacher.CreateInMemoryCache()
 	buff := buffer.CreateInMemoryBuffer()
@@ -41,12 +40,14 @@ func TestWithRandomPort(t *testing.T) {
 func TestGetClusterInfo(t *testing.T) {
 	part := partition.CreateSimplePartition("0")
 	go func() {
-		p := peer.CreateLocalPeer("0.0.0.0", 5666, &part)
+		p := peer.CreateLocalPeer("0.0.0.0", 5666)
 		ver := version.CreateGenClockVersion(0)
 		peerInfo := peer.CreateSimplePeerInfo(ver, true)
 		i := info.CreateInMemoryClusterInfo()
-		peer1 := peer.CreateLocalPeer("testpeer1", 0, &part)
-		peer2 := peer.CreateLocalPeer("testpeer2", 0, &part)
+		peer1 := peer.CreateLocalPeer("testpeer1", 0)
+		peer1 = peer1.SetPartition(part)
+		peer2 := peer.CreateLocalPeer("testpeer2", 0)
+		peer2 = peer2.SetPartition(part)
 		i.Add(peer1, peerInfo)
 		i.Add(peer2, peerInfo)
 
@@ -59,13 +60,13 @@ func TestGetClusterInfo(t *testing.T) {
 		}
 	}()
 
-	p2 := peer.CreateLocalPeer("0.0.0.0", 4666, &part)
+	p2 := peer.CreateLocalPeer("0.0.0.0", 4666)
 	i2 := info.CreateInMemoryClusterInfo()
 	cache2 := cacher.CreateInMemoryCache()
 	buff2 := buffer.CreateInMemoryBuffer()
 	network, _ := CreateRpcNetwork(p2, i2, cache2, buff2)
 
-	server := peer.CreateLocalPeer("0.0.0.0", 5666, &part)
+	server := peer.CreateLocalPeer("0.0.0.0", 5666)
 
 	n, err := network.Connect(server, 10*time.Second)
 	if err != nil {
@@ -83,12 +84,14 @@ func TestGetClusterInfo(t *testing.T) {
 
 func TestGetClusterInfoTwo(t *testing.T) {
 	part := partition.CreateSimplePartition("0")
-	p := peer.CreateLocalPeer("0.0.0.0", 0, &part)
+	p := peer.CreateLocalPeer("0.0.0.0", 0)
 	ver := version.CreateGenClockVersion(0)
 	peerInfo := peer.CreateSimplePeerInfo(ver, true)
 	i := info.CreateInMemoryClusterInfo()
-	peer1 := peer.CreateLocalPeer("testpeer1", 0, &part)
-	peer2 := peer.CreateLocalPeer("testpeer2", 0, &part)
+	peer1 := peer.CreateLocalPeer("testpeer1", 0)
+	peer1 = peer1.SetPartition(part)
+	peer2 := peer.CreateLocalPeer("testpeer2", 0)
+	peer2 = peer2.SetPartition(part)
 	i.Add(peer1, peerInfo)
 	i.Add(peer2, peerInfo)
 
@@ -101,7 +104,7 @@ func TestGetClusterInfoTwo(t *testing.T) {
 	}
 	p = network.Peer()
 
-	server := peer.CreateLocalPeer(p.Name(), p.Port(), p.Partition())
+	server := peer.CreateLocalPeer(p.Name(), p.Port())
 
 	n, err := network.Connect(server, 10*time.Second)
 	if err != nil {
@@ -119,8 +122,7 @@ func TestGetClusterInfoTwo(t *testing.T) {
 
 func TestWithSpecificPort(t *testing.T) {
 	port := uint16(63447)
-	part := partition.CreateSimplePartition("0")
-	p := peer.CreateLocalPeer("0.0.0.0", port, &part)
+	p := peer.CreateLocalPeer("0.0.0.0", port)
 	i := info.CreateInMemoryClusterInfo()
 	cache := cacher.CreateInMemoryCache()
 	buff := buffer.CreateInMemoryBuffer()
@@ -149,15 +151,13 @@ func TestWithSpecificPort(t *testing.T) {
 }
 
 func TestGetCache(t *testing.T) {
-
-	part := partition.CreateSimplePartition("0")
 	go func() {
-		p := peer.CreateLocalPeer("0.0.0.0", 5667, &part)
+		p := peer.CreateLocalPeer("0.0.0.0", 5667)
 		ver := version.CreateGenClockVersion(0)
 		peerInfo := peer.CreateSimplePeerInfo(ver, true)
 		i := info.CreateInMemoryClusterInfo()
-		peer1 := peer.CreateLocalPeer("testpeer1", 0, &part)
-		peer2 := peer.CreateLocalPeer("testpeer2", 0, &part)
+		peer1 := peer.CreateLocalPeer("testpeer1", 0)
+		peer2 := peer.CreateLocalPeer("testpeer2", 0)
 		i.Add(peer1, peerInfo)
 		i.Add(peer2, peerInfo)
 
@@ -172,13 +172,13 @@ func TestGetCache(t *testing.T) {
 		}
 	}()
 
-	p2 := peer.CreateLocalPeer("0.0.0.0", 4667, &part)
+	p2 := peer.CreateLocalPeer("0.0.0.0", 4667)
 	i2 := info.CreateInMemoryClusterInfo()
 	cache2 := cacher.CreateInMemoryCache()
 	buff := buffer.CreateInMemoryBuffer()
 	network, _ := CreateRpcNetwork(p2, i2, cache2, buff)
 
-	server := peer.CreateLocalPeer("0.0.0.0", 5667, &part)
+	server := peer.CreateLocalPeer("0.0.0.0", 5667)
 
 	n, err := network.Connect(server, 10*time.Second)
 	if err != nil {

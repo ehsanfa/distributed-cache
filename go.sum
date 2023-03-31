@@ -1,2 +1,4 @@
 github.com/ehsanfa/linked-list v0.0.0-20221004193816-248492dc61a1 h1:IAIzDO7LjMv50rRv7phlDth6JVKe2kXbkUoKnUye9P8=
 github.com/ehsanfa/linked-list v0.0.0-20221004193816-248492dc61a1/go.mod h1:8QhPNvvNy6mbyY1zTXM4j38O0BBcKkJgpdHntUg73Hc=
+github.com/gammazero/deque v0.2.1 h1:qSdsbG6pgp6nL7A0+K/B7s12mcCY/5l5SIUpMOl+dC0=
+github.com/gammazero/deque v0.2.1/go.mod h1:LFroj8x4cMYCukHJDbxFCkT+r9AndaJnFMuZDV34tuU=
