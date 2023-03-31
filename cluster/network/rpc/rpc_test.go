@@ -150,7 +150,7 @@ func TestWithSpecificPort(t *testing.T) {
 	t.Cleanup(network.Kill)
 }
 
-func TestGetCache(t *testing.T) {
+func TestGetAllCache(t *testing.T) {
 	go func() {
 		p := peer.CreateLocalPeer("0.0.0.0", 5667)
 		ver := version.CreateGenClockVersion(0)
@@ -198,4 +198,22 @@ func TestGetCache(t *testing.T) {
 		t.Error("wrong value provided")
 	}
 	// t.Cleanup(network.Kill)
+}
+
+func TestGet(t *testing.T) {
+	p1 := peer.CreateLocalPeer("0.0.0.0", 45655)
+	cache1 := cacher.CreateInMemoryCache()
+	cache1.Set("hasan", cacher.NewVersionBasedCacheValue("hooshang", 1))
+	info1 := info.CreateInMemoryClusterInfo()
+	buffer1 := buffer.CreateInMemoryBuffer()
+	network, _ := CreateRpcNetwork(p1, info1, cache1, buffer1)
+
+	n, err := network.Connect(peer.CreateLocalPeer("0.0.0.0", 45655), 10*time.Second)
+	if err != nil {
+		t.Error(err)
+	}
+	resp, _ := n.Get("hasan")
+	if resp.GetValue() != "hooshang" {
+		t.Error("expected to get correct cached value")
+	}
 }
