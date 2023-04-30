@@ -8,6 +8,7 @@ import (
 )
 
 type Node interface {
+	Introduce(peer.Peer) error
 	GetClusterInfo() (map[peer.Peer]peer.PeerInfo, error)
 	GetCache() (map[string]cacher.CacheValue, error)
 	AskForParition() (partition.Partition, error)

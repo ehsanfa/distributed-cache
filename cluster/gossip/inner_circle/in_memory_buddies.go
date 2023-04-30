@@ -12,13 +12,15 @@ type InMemoryBuddies struct {
 	maxBuddyNum int
 	mu          sync.RWMutex
 	dq          *deque.Deque[peer.Peer]
+	self        peer.Peer
 }
 
-func CreateInMemoryBuddies(maxBuddyNum int) *InMemoryBuddies {
+func CreateInMemoryBuddies(maxBuddyNum int, self peer.Peer) *InMemoryBuddies {
 	return &InMemoryBuddies{
 		buddies:     make(map[peer.Peer]bool),
 		maxBuddyNum: maxBuddyNum,
 		dq:          deque.New[peer.Peer](maxBuddyNum),
+		self:        self,
 	}
 }
 
@@ -30,7 +32,7 @@ func (b *InMemoryBuddies) replaceDeque() {
 }
 
 func (b *InMemoryBuddies) canAdd(p peer.Peer) bool {
-	return b.canAcceptBuddyRequest() && !b.isBuddyWith(p)
+	return b.canAcceptBuddyRequest() && !b.isBuddyWith(p) && p != nil && p != b.self
 }
 
 func (b *InMemoryBuddies) Add(p peer.Peer) bool {
@@ -79,27 +81,28 @@ func (b *InMemoryBuddies) Replace(old peer.Peer, new peer.Peer) {
 	b.Add(new)
 }
 
-func (b *InMemoryBuddies) Diff(target map[peer.Peer]bool) map[peer.Peer]bool {
-	diff := make(map[peer.Peer]bool)
-	for p := range target {
+func (b *InMemoryBuddies) Diff(target []peer.Peer) []peer.Peer {
+	diff := make([]peer.Peer, 0)
+	for _, p := range target {
 		if !b.isBuddyWith(p) {
-			diff[p] = true
+			diff = append(diff, p)
 		}
 	}
 	return diff
 }
 
-func (b *InMemoryBuddies) Shuffle(candidates map[peer.Peer]bool) {
-	// find the difference between candidates and the current circle
+func (b *InMemoryBuddies) Shuffle(candidates []peer.Peer) {
 	diff := b.Diff(candidates)
-	// if the difference is empty, do nothing
 	if len(diff) == 0 {
 		return
 	}
-	// if the count is
+	if len(b.buddies) == 0 {
+		b.initiateBuddiesFromCandidates(candidates)
+		return
+	}
 	counter := 0
 	dq := *b.dq
-	for newP := range diff {
+	for _, newP := range diff {
 		if b.isBuddyWith(newP) {
 			continue
 		}
@@ -113,5 +116,13 @@ func (b *InMemoryBuddies) Shuffle(candidates map[peer.Peer]bool) {
 			b.Replace(oldP, newP)
 		}
 		counter++
+	}
+}
+
+func (b *InMemoryBuddies) initiateBuddiesFromCandidates(candidates []peer.Peer) {
+	for _, p := range candidates {
+		if b.canAdd(p) {
+			b.Add(p)
+		}
 	}
 }

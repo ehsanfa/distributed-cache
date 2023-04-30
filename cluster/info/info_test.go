@@ -58,6 +58,7 @@ func TestIsPeerKnownAlive(t *testing.T) {
 func TestUpdate(t *testing.T) {
 	info := CreateInMemoryClusterInfo()
 	peerInfo1 := peer.CreateSimplePeerInfo(version.CreateGenClockVersion(0), true)
+
 	p1 := peer.CreateLocalPeer("peer1", 12564)
 	info.Add(p1, peerInfo1)
 	peerInfo2 := peer.CreateSimplePeerInfo(version.CreateGenClockVersion(0), true)
@@ -67,10 +68,11 @@ func TestUpdate(t *testing.T) {
 	if peerInfo1.Version().Number() != 0 || peerInfo2.Version().Number() != 0 {
 		t.Error("initial versions don't match", peerInfo2.Version().Number())
 	}
-	newPeerInfo := peer.CreateSimplePeerInfo(version.CreateGenClockVersion(0), true)
-	newPeerInfo.Version().Increment()
-	newPeerInfo.Version().Increment()
-	newPeerInfo.Version().Increment()
+	newPeerVersion := version.CreateGenClockVersion(0)
+	newPeerVersion = newPeerVersion.Increment().(version.GenClock)
+	newPeerVersion = newPeerVersion.Increment().(version.GenClock)
+	newPeerVersion = newPeerVersion.Increment().(version.GenClock)
+	newPeerInfo := peer.CreateSimplePeerInfo(newPeerVersion, true)
 	info.Update(map[peer.Peer]peer.PeerInfo{p2: newPeerInfo})
 	res, _ := info.Get(p2)
 	if res.Version().Number() != newPeerInfo.Version().Number() {

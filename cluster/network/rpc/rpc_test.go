@@ -217,3 +217,67 @@ func TestGet(t *testing.T) {
 		t.Error("expected to get correct cached value")
 	}
 }
+
+func TestPut(t *testing.T) {
+	p1 := peer.CreateLocalPeer("0.0.0.0", 45655)
+	cache1 := cacher.CreateInMemoryCache()
+	info1 := info.CreateInMemoryClusterInfo()
+	buffer1 := buffer.CreateInMemoryBuffer()
+	network, _ := CreateRpcNetwork(p1, info1, cache1, buffer1)
+	n, err := network.Connect(peer.CreateLocalPeer("0.0.0.0", 45655), 10*time.Second)
+	if err != nil {
+		t.Error(err)
+	}
+	val := cacher.NewVersionBasedCacheValue("hooshang", 3)
+	err = n.Set("hasan", val)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if v, _ := cache1.Get("hasan"); v.GetValue() != "hooshang" {
+		t.Error("expected to get the right value after set")
+	}
+	if v, _ := cache1.Get("hasan"); v.Version() != 3 {
+		t.Error("expected to get the right version after set")
+	}
+}
+
+func TestIntroduction(t *testing.T) {
+	go func() {
+		p := peer.CreateLocalPeer("0.0.0.0", 5666)
+		i := info.CreateInMemoryClusterInfo()
+
+		cache1 := cacher.CreateInMemoryCache()
+		buff1 := buffer.CreateInMemoryBuffer()
+
+		_, err := CreateRpcNetwork(p, i, cache1, buff1)
+		if err != nil {
+			t.Error(err)
+		}
+	}()
+
+	p2 := peer.CreateLocalPeer("0.0.0.0", 4666)
+	i2 := info.CreateInMemoryClusterInfo()
+	cache2 := cacher.CreateInMemoryCache()
+	buff2 := buffer.CreateInMemoryBuffer()
+	network, _ := CreateRpcNetwork(p2, i2, cache2, buff2)
+
+	server := peer.CreateLocalPeer("0.0.0.0", 5666)
+
+	n, err := network.Connect(server, 10*time.Second)
+	if err != nil {
+		t.Error(err)
+	}
+	err = n.Introduce(p2)
+	if err != nil {
+		t.Error(err)
+	}
+
+	resp, err := n.GetClusterInfo()
+	if err != nil {
+		t.Error(err)
+	}
+	if len(resp) != 1 {
+		t.Error("size doesn't match")
+	}
+}

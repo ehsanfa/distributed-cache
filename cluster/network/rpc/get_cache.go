@@ -21,7 +21,7 @@ type marshalCache struct {
 
 func (n *RpcNode) GetCache() (map[string]cacher.CacheValue, error) {
 	resp := new(GetCacheResponse)
-	err := n.client.Call("RpcNode.RpcGetCache", struct{}{}, &resp)
+	err := n.client.Call(n.rpcAction("RpcGetCache"), struct{}{}, &resp)
 	return resp.Cache, err
 }
 

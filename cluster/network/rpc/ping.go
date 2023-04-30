@@ -2,7 +2,7 @@ package rpc
 
 func (n *RpcNode) Ping() (bool, error) {
 	var resp PingResponse
-	err := n.client.Call("RpcNetwork.RpcPing", PingRequest{}, &resp)
+	err := n.client.Call(n.rpcAction("RpcPing"), PingRequest{}, &resp)
 	if err != nil {
 		return false, err
 	}
@@ -13,6 +13,6 @@ type PingRequest struct{}
 
 type PingResponse struct{}
 
-func (n *RpcNetwork) RpcPing(req PingRequest, resp *PingResponse) error {
+func (n *RpcNode) RpcPing(req PingRequest, resp *PingResponse) error {
 	return nil
 }

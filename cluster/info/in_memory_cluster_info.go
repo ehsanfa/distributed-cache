@@ -2,6 +2,8 @@ package info
 
 import (
 	"dbcache/cluster/peer"
+	"fmt"
+	"log"
 	"sync"
 )
 
@@ -76,15 +78,17 @@ func (i *InMemoryClusterInfo) Replace(info map[peer.Peer]peer.PeerInfo) {
 func (i *InMemoryClusterInfo) Update(info map[peer.Peer]peer.PeerInfo) {
 	for peer, peerInfo := range info {
 
-		if !i.IsPeerAlive(peer) {
-			i.Add(peer, peerInfo)
-			// peer.track(peerInfo)
-			// updatePartitionsInfo(peer, peerInfo)
-			continue
-		}
+		// if !i.IsPeerAlive(peer) {
+		// 	log.Println("UPDATE", peer, peerInfo)
+		// 	i.Add(peer, peerInfo)
+		// 	// peer.track(peerInfo)
+		// 	// updatePartitionsInfo(peer, peerInfo)
+		// 	continue
+		// }
 
-		pi, _ := i.getInfo(peer)
-		if pi.Version().Number() < peerInfo.Version().Number() {
+		pi, ok := i.getInfo(peer)
+		if !ok || pi.Version().Number() < peerInfo.Version().Number() {
+			log.Println("UPDATE", peer, peerInfo)
 			i.Add(peer, peerInfo)
 		}
 
@@ -97,4 +101,31 @@ func (i *InMemoryClusterInfo) Update(info map[peer.Peer]peer.PeerInfo) {
 
 func (i *InMemoryClusterInfo) GetClusterInfo() map[peer.Peer]peer.PeerInfo {
 	return i.All()
+}
+
+func (i *InMemoryClusterInfo) Upsert(p peer.Peer, pi peer.PeerInfo) {
+	i.Add(p, pi)
+}
+
+func (i *InMemoryClusterInfo) MarkAsDead(p peer.Peer) error {
+	pi, ok := i.Get(p)
+	if !ok {
+		return fmt.Errorf("mark as dead failed. peer %s is unknown", p.Name())
+	}
+	pi = pi.MarkAsDead()
+	log.Println("marked as dead", pi.IsAlive())
+	i.Add(p, pi)
+	log.Println("updated info", i.All())
+	return nil
+}
+
+func (i *InMemoryClusterInfo) AllAlive() map[peer.Peer]peer.PeerInfo {
+	l := make(map[peer.Peer]peer.PeerInfo)
+	for p, pi := range i.All() {
+		if !pi.IsAlive() {
+			continue
+		}
+		l[p] = pi
+	}
+	return l
 }

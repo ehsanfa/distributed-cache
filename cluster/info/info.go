@@ -7,17 +7,16 @@ import (
 type ClusterInfo interface {
 	Get(peer.Peer) (peer.PeerInfo, bool)
 	Add(peer.Peer, peer.PeerInfo)
+	Upsert(peer.Peer, peer.PeerInfo)
 	All() map[peer.Peer]peer.PeerInfo
+	AllAlive() map[peer.Peer]peer.PeerInfo
 	IsPeerKnown(peer.Peer) bool
 	IsPeerAlive(peer.Peer) bool
 	List() []peer.Peer
 	Remove(peer.Peer)
 	Replace(map[peer.Peer]peer.PeerInfo)
 	Update(map[peer.Peer]peer.PeerInfo)
-}
-
-type ClusterInfoProvider interface {
-	GetClusterInfo() map[peer.Peer]peer.PeerInfo
+	MarkAsDead(peer.Peer) error
 }
 
 // func getPartitionPeers(p partition.Partition) []Peer {

@@ -2,8 +2,7 @@ package version
 
 type Version interface {
 	Number() uint64
-	Increment()
-	ReplaceWith(v2 Version)
+	Increment() Version
 }
 
 // func (v1 *Version) replaceAndIncrement(v2 Version) {

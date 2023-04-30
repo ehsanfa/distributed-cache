@@ -16,7 +16,7 @@ func (n *RpcNode) UpdateBuffer(source buffer.Buffer) error {
 	req := new(UpdateBufferRequest)
 	req.buff = source
 	resp := new(RpcUpdateBufferResp)
-	err := n.client.Call("RpcNode.RpcUpdateBuffer", req, &resp)
+	err := n.client.Call(n.rpcAction("RpcUpdateBuffer"), req, &resp)
 	return err
 }
 

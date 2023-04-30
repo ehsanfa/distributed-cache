@@ -50,7 +50,7 @@ func TestGetsInfoFromSeederWhenInitialized(t *testing.T) {
 
 	seeder := peer.CreateLocalPeer("0.0.0.0", uint16(seederPort))
 
-	gossip, err := CreateGossipNetwork(network1, info1, seeder, false)
+	gossip, err := CreateGossipNetwork(network1, info1, seeder, false, peer1)
 	if err != nil {
 		t.Error(err)
 	}
@@ -72,7 +72,7 @@ func TestFailsWhenNoSeeder(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if _, err := CreateGossipNetwork(network1, info1, nil, false); err == nil {
+	if _, err := CreateGossipNetwork(network1, info1, nil, false, peer1); err == nil {
 		t.Error("expected to see error")
 	}
 }
@@ -86,14 +86,16 @@ func TestSeederStandalone(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	gossip, err := CreateGossipNetwork(network1, info1, nil, true)
+	gossip, err := CreateGossipNetwork(network1, info1, nil, true, peer1)
 	if err != nil {
 		t.Error(err)
+	} else {
+		gossip.Start()
 	}
 
-	gossip.Start()
+	time.Sleep(5 * time.Second)
 }
 
-// func TestInfoIsUpdatedWhenNodeIsDead() {
-
-// }
+func TestInfoIsUpdatedWhenNodeIsDead(t *testing.T) {
+	// TODO
+}

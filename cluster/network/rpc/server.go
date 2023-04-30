@@ -3,13 +3,12 @@ package rpc
 import (
 	"dbcache/cluster/peer"
 	"fmt"
-	"log"
 	"net"
 	"net/rpc"
 )
 
 type rpcServer struct {
-	Peer peer.Peer
+	Node *RpcNode
 	port uint16
 	kill chan bool
 }
@@ -17,7 +16,8 @@ type rpcServer struct {
 func (n *RpcNetwork) serve() (peer.WithPort, error) {
 	ch := make(chan connRes)
 	kill := make(chan bool)
-	n.server = &rpcServer{Peer: n.p, kill: kill}
+	node := &RpcNode{p: n.p}
+	n.server = &rpcServer{Node: node, kill: kill}
 
 	var err error
 	go n.server.initialize(n.p, ch)
@@ -50,17 +50,20 @@ func (s *rpcServer) initialize(p peer.Peer, channel chan<- connRes) {
 		channel <- connRes{false, 0, err}
 		return
 	}
-	channel <- connRes{true, extractPort(listener), err}
+	port := extractPort(listener)
+	channel <- connRes{true, port, err}
+	s.Node.p = s.Node.p.SetPort(port)
+
+	server := rpc.NewServer()
+	server.RegisterName(s.Node.rpcName(), s.Node)
 
 	for {
 		conn, err := listener.Accept()
 
 		if err != nil {
-			log.Print(err)
-			return
-			// break
+			panic(err)
 		}
-		go rpc.ServeConn(conn)
+		go server.ServeConn(conn)
 		go func() {
 			<-s.kill
 			conn.Close()

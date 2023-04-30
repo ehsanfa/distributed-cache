@@ -6,6 +6,7 @@ import (
 	"dbcache/cluster/peer"
 	"dbcache/cluster/version"
 	"encoding/gob"
+	"log"
 )
 
 type ClusterInfoResponse struct {
@@ -14,12 +15,14 @@ type ClusterInfoResponse struct {
 
 func (n *RpcNode) GetClusterInfo() (map[peer.Peer]peer.PeerInfo, error) {
 	resp := new(ClusterInfoResponse)
-	err := n.client.Call("RpcNode.RpcGetClusterInfo", struct{}{}, &resp)
+	err := n.client.Call(n.rpcAction("RpcGetClusterInfo"), struct{}{}, &resp)
+	log.Println("clusterinfo", resp.ClusterInfo)
 	return resp.ClusterInfo, err
 }
 
 func (n *RpcNode) RpcGetClusterInfo(p struct{}, resp *ClusterInfoResponse) error {
-	*resp = ClusterInfoResponse{hostNetwork.info.GetClusterInfo()}
+	log.Println("responding to getClusterInfo", hostNetwork.info.All())
+	*resp = ClusterInfoResponse{hostNetwork.info.All()}
 	return nil
 }
 
@@ -67,7 +70,7 @@ func (c *ClusterInfoResponse) UnmarshalBinary(data []byte) error {
 		return err
 	}
 	ps := rpcPeer.Peer{Peer: peer.CreateLocalPeer("", 0)}
-	vers := version.CreateGenClockVersion(0)
+	vers := version.CreateGenClockVersion(8000)
 	pis := peer.CreateSimplePeerInfo(vers, true)
 	for _, v := range mcir.Response {
 		if e := ps.UnmarshalBinary(v.Peer); e != nil {
@@ -79,7 +82,7 @@ func (c *ClusterInfoResponse) UnmarshalBinary(data []byte) error {
 		}
 		a := peer.CreateLocalPeer(ps.Peer.Name(), ps.Peer.Port())
 		a = a.SetPartition(ps.Peer.Partition())
-		b := peer.CreateSimplePeerInfo(pis.Version(), pis.IsAlive())
+		b := peer.CreateSimplePeerInfo(rpcpi.Pi.Version(), rpcpi.Pi.IsAlive())
 		r[a] = b
 	}
 	c.ClusterInfo = r

@@ -6,17 +6,16 @@ import (
 
 func TestVersion(t *testing.T) {
 	v1 := CreateGenClockVersion(0)
-	v1.Increment()
+	v1 = v1.Increment().(GenClock)
 	if v1.Number() != 1 {
 		t.Error("versions don't match")
 	}
 
 	v2 := CreateGenClockVersion(0)
-	v2.Increment()
-	v2.Increment()
-	v2.Increment()
-	v1.ReplaceWith(v2)
-	if v1.Number() != 3 {
+	v2 = v2.Increment().(GenClock)
+	v2 = v2.Increment().(GenClock)
+	v2 = v2.Increment().(GenClock)
+	if v2.Number() != 3 {
 		t.Error("versions after replacing don't match")
 	}
 }

@@ -7,5 +7,5 @@ import (
 type PeerInfo interface {
 	Version() version.Version
 	IsAlive() bool
-	MarkAsDead()
+	MarkAsDead() PeerInfo
 }
