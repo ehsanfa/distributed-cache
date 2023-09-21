@@ -1,16 +1,18 @@
 package cluster
 
 import (
-	"sync"
 	partition "dbcache/partitioning"
+	"fmt"
+	"sync"
 )
 
 var partitions []partition.Partition
 var assignedPartitions map[partition.Partition]map[Peer]bool
 
-func (n *Node) getPeersForPartitioning() map[Peer]bool{
+func (n *Node) getPeersForPartitioning() map[Peer]bool {
 	p := n.partition
 	peers, ok := assignedPartitions[p]
+	fmt.Println("assigned partitions", p, assignedPartitions)
 	if !ok {
 		return map[Peer]bool{}
 	}
@@ -25,7 +27,7 @@ func (n *Node) convertInfoToPartitionPeers() map[Peer]bool {
 	return peers
 }
 
-func (peerInfo *PeerInfo) assignPartition(peer Peer){
+func (peerInfo *PeerInfo) assignPartition(peer Peer) {
 	if len(partitions) == 0 {
 		partitions = partition.Initialize(float64(minPartitions))
 	}
@@ -49,7 +51,7 @@ func (peerInfo *PeerInfo) assignPartition(peer Peer){
 	addToParitionsInfo(peer, *peerInfo)
 }
 
-func addToParitionsInfo(peer Peer, peerInfo PeerInfo){
+func addToParitionsInfo(peer Peer, peerInfo PeerInfo) {
 	var mu sync.Mutex
 	mu.Lock()
 	if assignedPartitions == nil {

@@ -1,12 +1,10 @@
 package request_handler
 
 import (
+	partition "dbcache/partitioning"
 	"fmt"
 	"net/rpc"
 	"time"
-
-	// "sync"
-	partition "dbcache/partitioning"
 )
 
 func (c *Cluster) getNodes(p partition.Partition) *ClusterNodes {
@@ -18,19 +16,13 @@ func (c *Cluster) getNodes(p partition.Partition) *ClusterNodes {
 	return peers
 }
 
-// var mu *sync.Mutex
-
 func (c *Cluster) pickNode(key string) *Peer {
-	// mu.Lock()
-	// defer mu.Unlock()
 	part := partition.GetPartition(key)
 	nodes := c.getNodes(part)
 	peer, err := nodes.dequeue()
 	if err == nil {
 		return peer
 	}
-	// fmt.Println(err, part, key)
-	// fmt.Println("is empty", key, part, "nodes", nodes, nodes.deq.Count())
 	return &c.seeder
 }
 
@@ -58,7 +50,6 @@ func (c *Cluster) addPeer(part partition.Partition, peer *Peer) {
 			return
 		}
 		c.nodes[part].add(peer.info, peer)
-		// c.nodes[part][peer.info] = peer
 		fmt.Println("got commit adding part node", part, peer)
 		go peer.listen()
 	}
@@ -78,7 +69,6 @@ func (c *Cluster) getInfo(infoReceived chan<- bool) {
 		p := c.seeder
 		select {
 		case <-ticker.C:
-			// fmt.Println("getting info")
 			var resp ShareInfoResponse
 			req := ShareCacheRequest{}
 			conn, err := c.connect(p)
@@ -90,17 +80,12 @@ func (c *Cluster) getInfo(infoReceived chan<- bool) {
 			}
 			conn.Call("Node.ShareInfo", req, &resp)
 			c.info = resp.Info
-			fmt.Println("got info ", resp)
-			// var pps map[*Peer]bool
 			for part, peers := range resp.Partitions {
-				// pps = make(/[*Peer]bool)
 				for pi, _ := range peers {
 					mn := &Peer{info: PeerInfo{Name: pi.Name, Port: pi.Port}}
 					c.addPeer(part, mn)
 				}
-				// c.nodes[part] = pps
 			}
-			// c.nodes = resp.Partitions
 			c.sortPartitions()
 			infoReceived <- true
 		}

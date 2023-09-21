@@ -19,7 +19,7 @@ services:
       replicas: 3
     volumes:
       - "cacher:/go/src"
-    command: "go run node.go"
+    command: "go run cacher.go"
     working_dir: "/go/src"
     networks:
       - seeds
@@ -60,13 +60,13 @@ services:
       - seeds
       - gossip
 
-  child:
+  cacher:
     image: golang:latest
     deploy:
       replicas: 6
     volumes:
       - "cacher:/go/src"
-    command: "go run node.go"
+    command: "go run cacher.go"
     working_dir: "/go/src"
     networks:
       - gossip

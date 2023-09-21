@@ -1,8 +1,6 @@
 package cluster
 
-import (
-	"fmt"
-)
+import "fmt"
 
 const maxBuddyNum int = 2
 
@@ -80,7 +78,7 @@ func (n *Node) askForCache(peer Peer) {
 	req := CacheEntity{}
 	c.Call("Node.ShareCache", req, &resp)
 	if len(resp.Cache) > 0 {
-		thisNode.cache = resp.Cache
+		thisNode.cache.Replace(resp.Cache)
 	}
 }
 
