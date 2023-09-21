@@ -2,9 +2,9 @@ package cacher
 
 type CacheValue interface {
 	GetValue() string
-	SetValue(string)
+	SetValue(string) CacheValue
 	Version() int
-	IncrementVersion()
+	IncrementVersion() CacheValue
 	// encoding.BinaryMarshaler
 	// encoding.BinaryUnmarshaler
 }

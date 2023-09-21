@@ -3,7 +3,6 @@ package rpc
 import (
 	"dbcache/cluster/peer"
 	"dbcache/cluster/version"
-	"log"
 )
 
 type IntroductionResponse struct{}
@@ -11,19 +10,25 @@ type IntroductionResponse struct{}
 type ReqPeer struct {
 	Name string
 	Port uint16
+	Type peer.PeerType
 }
 
-func (n *RpcNode) Introduce(p peer.Peer) error {
+func (n *RpcNode) Introduce(peerType peer.PeerType, p peer.Peer) error {
 	resp := new(IntroductionResponse)
-	reqP := ReqPeer{Name: p.Name(), Port: p.Port()}
+	reqP := ReqPeer{Name: p.Name(), Port: p.Port(), Type: peerType}
 	err := n.client.Call(n.rpcAction("RpcIntroduce"), reqP, &resp)
 	return err
 }
 
 func (n *RpcNode) RpcIntroduce(req ReqPeer, r *IntroductionResponse) error {
-	ver := version.CreateGenClockVersion(0)
 	p := peer.CreateLocalPeer(req.Name, req.Port)
-	hostNetwork.info.Add(p, peer.CreateSimplePeerInfo(ver, true))
-	log.Println("got intoruction request", p.Name(), p.Port())
+	peerInfo, ok := hostNetwork.info.Get(p)
+	if ok {
+		peerInfo = peerInfo.MarkAsAlive()
+	} else {
+		ver := version.CreateGenClockVersion(0)
+		peerInfo = peer.CreateSimplePeerInfo(req.Type, ver, true)
+	}
+	hostNetwork.info.Add(p, peerInfo)
 	return nil
 }

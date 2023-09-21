@@ -88,7 +88,7 @@ func (i *InMemoryClusterInfo) Update(info map[peer.Peer]peer.PeerInfo) {
 
 		pi, ok := i.getInfo(peer)
 		if !ok || pi.Version().Number() < peerInfo.Version().Number() {
-			log.Println("UPDATE", peer, peerInfo)
+			log.Println("UPDATE WITH PEER TYPE", peerInfo.Type(), peer, peerInfo)
 			i.Add(peer, peerInfo)
 		}
 

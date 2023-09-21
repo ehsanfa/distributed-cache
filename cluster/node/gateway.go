@@ -3,6 +3,7 @@ package node
 import (
 	"dbcache/cluster/buffer"
 	"dbcache/cluster/cacher"
+	rpcGateway "dbcache/cluster/gateway/rpc"
 	"dbcache/cluster/gossip/gossip"
 	"dbcache/cluster/info"
 	"dbcache/cluster/network/rpc"
@@ -11,18 +12,18 @@ import (
 	"time"
 )
 
-type Cacher struct {
+type Gateway struct {
 	p      peer.Peer
 	seeder peer.Peer
 }
 
-func CreateCacherNode(
+func CreateGatewayNode(
 	p peer.Peer,
 	seeder peer.Peer,
 	cache cacher.Cache,
 	i info.ClusterInfo,
 	buff buffer.Buffer,
-) (*Cacher, error) {
+) (*Gateway, error) {
 	if seeder == nil {
 		panic("Seeder info required")
 	}
@@ -38,15 +39,17 @@ func CreateCacherNode(
 	if err != nil {
 		return nil, err
 	}
-	err = node.Introduce(peer.Cacher, n.Peer())
+	err = node.Introduce(peer.Gateway, n.Peer())
 	if err != nil {
 		return nil, err
 	}
+	gateway := rpcGateway.CreateRpcGateway(i, n)
+	go gateway.Serve()
 	g.Start()
-	return &Cacher{p, seeder}, nil
+	return &Gateway{p, seeder}, nil
 }
 
-func (cacher *Cacher) Run() {
-	log.Printf("Running cacher on %s port %d", cacher.p.Name(), cacher.p.Port())
+func (gateway *Gateway) Run() {
+	log.Printf("Running cacher on %s port %d", gateway.p.Name(), gateway.p.Port())
 	select {}
 }

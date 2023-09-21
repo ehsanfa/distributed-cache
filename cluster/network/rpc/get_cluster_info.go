@@ -71,7 +71,7 @@ func (c *ClusterInfoResponse) UnmarshalBinary(data []byte) error {
 	}
 	ps := rpcPeer.Peer{Peer: peer.CreateLocalPeer("", 0)}
 	vers := version.CreateGenClockVersion(8000)
-	pis := peer.CreateSimplePeerInfo(vers, true)
+	pis := peer.CreateSimplePeerInfo(peer.Unspecified, vers, true)
 	for _, v := range mcir.Response {
 		if e := ps.UnmarshalBinary(v.Peer); e != nil {
 			return e
@@ -82,7 +82,7 @@ func (c *ClusterInfoResponse) UnmarshalBinary(data []byte) error {
 		}
 		a := peer.CreateLocalPeer(ps.Peer.Name(), ps.Peer.Port())
 		a = a.SetPartition(ps.Peer.Partition())
-		b := peer.CreateSimplePeerInfo(rpcpi.Pi.Version(), rpcpi.Pi.IsAlive())
+		b := peer.CreateSimplePeerInfo(rpcpi.Pi.Type(), rpcpi.Pi.Version(), rpcpi.Pi.IsAlive())
 		r[a] = b
 	}
 	c.ClusterInfo = r

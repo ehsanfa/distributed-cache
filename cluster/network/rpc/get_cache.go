@@ -3,6 +3,7 @@ package rpc
 import (
 	"bytes"
 	"dbcache/cluster/cacher"
+	rpcCache "dbcache/cluster/network/rpc/types/cache"
 	"encoding/gob"
 )
 
@@ -33,7 +34,7 @@ func (n *RpcNode) RpcGetCache(p struct{}, resp *GetCacheResponse) error {
 func (r *GetCacheResponse) MarshalBinary() (data []byte, err error) {
 	var c []marshalCache
 	for k, v := range r.Cache {
-		rpccv := RpcCacheValue{v}
+		rpccv := rpcCache.RpcCacheValue{Value: v}
 		mv, err := rpccv.MarshalBinary()
 		if err != nil {
 			return make([]byte, 0), err
@@ -59,13 +60,13 @@ func (r *GetCacheResponse) UnmarshalBinary(data []byte) error {
 	if err := dec.Decode(&mcr); err != nil {
 		return err
 	}
-	cacheValue := RpcCacheValue{cacher.NewVersionBasedCacheValue("", 0)}
+	cacheValue := rpcCache.RpcCacheValue{Value: cacher.NewVersionBasedCacheValue("", 0)}
 	for _, mc := range mcr.Resp {
 		if e := cacheValue.UnmarshalBinary(mc.Value); e != nil {
 			return e
 		}
-		cv := RpcCacheValue{cacheValue.value}
-		c[mc.Key] = cv.value
+		cv := rpcCache.RpcCacheValue{Value: cacheValue.Value}
+		c[mc.Key] = cv.Value
 	}
 	r.Cache = c
 	return nil

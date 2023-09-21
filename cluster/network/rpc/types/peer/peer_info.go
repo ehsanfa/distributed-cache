@@ -13,6 +13,7 @@ type PeerInfo struct {
 }
 
 type marshalPeerInfo struct {
+	Type    peer.PeerType
 	Version []byte
 	IsAlive bool
 }
@@ -28,6 +29,7 @@ func (i *PeerInfo) MarshalBinary() (data []byte, err error) {
 	if err := enc.Encode(marshalPeerInfo{
 		Version: mv,
 		IsAlive: i.Pi.IsAlive(),
+		Type:    i.Pi.Type(),
 	}); err != nil {
 		return nil, err
 	}
@@ -45,6 +47,6 @@ func (i *PeerInfo) UnmarshalBinary(data []byte) error {
 	if e := v.UnmarshalBinary(m.Version); e != nil {
 		return e
 	}
-	i.Pi = peer.CreateSimplePeerInfo(v.Ver, m.IsAlive)
+	i.Pi = peer.CreateSimplePeerInfo(m.Type, v.Ver, m.IsAlive)
 	return nil
 }

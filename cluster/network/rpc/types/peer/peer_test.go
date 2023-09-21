@@ -13,7 +13,7 @@ func TestMarshalPeerInfo(t *testing.T) {
 	ver = ver.Increment().(version.GenClock)
 	ver = ver.Increment().(version.GenClock)
 	ver = ver.Increment().(version.GenClock)
-	pi := PeerInfo{Pi: peer.CreateSimplePeerInfo(ver, true)}
+	pi := PeerInfo{Pi: peer.CreateSimplePeerInfo(peer.Cacher, ver, true)}
 	var buf bytes.Buffer
 	enc := gob.NewEncoder(&buf)
 	if err := enc.Encode(&pi); err != nil {

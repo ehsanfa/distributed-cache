@@ -42,7 +42,7 @@ func TestGetClusterInfo(t *testing.T) {
 	go func() {
 		p := peer.CreateLocalPeer("0.0.0.0", 5666)
 		ver := version.CreateGenClockVersion(0)
-		peerInfo := peer.CreateSimplePeerInfo(ver, true)
+		peerInfo := peer.CreateSimplePeerInfo(peer.Cacher, ver, true)
 		i := info.CreateInMemoryClusterInfo()
 		peer1 := peer.CreateLocalPeer("testpeer1", 0)
 		peer1 = peer1.SetPartition(part)
@@ -86,7 +86,7 @@ func TestGetClusterInfoTwo(t *testing.T) {
 	part := partition.CreateSimplePartition("0")
 	p := peer.CreateLocalPeer("0.0.0.0", 0)
 	ver := version.CreateGenClockVersion(0)
-	peerInfo := peer.CreateSimplePeerInfo(ver, true)
+	peerInfo := peer.CreateSimplePeerInfo(peer.Cacher, ver, true)
 	i := info.CreateInMemoryClusterInfo()
 	peer1 := peer.CreateLocalPeer("testpeer1", 0)
 	peer1 = peer1.SetPartition(part)
@@ -154,7 +154,7 @@ func TestGetAllCache(t *testing.T) {
 	go func() {
 		p := peer.CreateLocalPeer("0.0.0.0", 5667)
 		ver := version.CreateGenClockVersion(0)
-		peerInfo := peer.CreateSimplePeerInfo(ver, true)
+		peerInfo := peer.CreateSimplePeerInfo(peer.Cacher, ver, true)
 		i := info.CreateInMemoryClusterInfo()
 		peer1 := peer.CreateLocalPeer("testpeer1", 0)
 		peer2 := peer.CreateLocalPeer("testpeer2", 0)
@@ -268,7 +268,7 @@ func TestIntroduction(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	err = n.Introduce(p2)
+	err = n.Introduce(peer.Cacher, p2)
 	if err != nil {
 		t.Error(err)
 	}
@@ -280,4 +280,8 @@ func TestIntroduction(t *testing.T) {
 	if len(resp) != 1 {
 		t.Error("size doesn't match")
 	}
+}
+
+func TestUpdateBuffer(t *testing.T) {
+
 }

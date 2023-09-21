@@ -35,7 +35,7 @@ func (c *InMemoryCache) Touch(key string) {
 	if !ok {
 		v = NewVersionBasedCacheValue("", 1)
 	}
-	v.IncrementVersion()
+	v = v.IncrementVersion()
 	c.Set(key, v)
 }
 
@@ -58,8 +58,8 @@ func (c *InMemoryCache) Delete(key string) {
 	if !ok {
 		return
 	}
-	v.SetValue("")
-	v.IncrementVersion()
+	v = v.SetValue("")
+	v = v.IncrementVersion()
 	c.Set(key, v)
 }
 

@@ -1,4 +1,4 @@
-package rpc
+package cache
 
 import (
 	"bytes"
@@ -7,7 +7,7 @@ import (
 )
 
 type RpcCacheValue struct {
-	value cacher.CacheValue
+	Value cacher.CacheValue
 }
 
 type marshalCacheValue struct {
@@ -15,14 +15,14 @@ type marshalCacheValue struct {
 	Version int
 }
 
-func (v *RpcCacheValue) GetCacheValue() cacher.CacheValue {
-	return v.value
+func (v RpcCacheValue) GetCacheValue() cacher.CacheValue {
+	return v.Value
 }
 
-func (v *RpcCacheValue) MarshalBinary() (data []byte, err error) {
+func (v RpcCacheValue) MarshalBinary() (data []byte, err error) {
 	var buf bytes.Buffer
 	enc := gob.NewEncoder(&buf)
-	if err := enc.Encode(marshalCacheValue{v.value.GetValue(), v.value.Version()}); err != nil {
+	if err := enc.Encode(marshalCacheValue{v.Value.GetValue(), v.Value.Version()}); err != nil {
 		return nil, err
 	}
 	return buf.Bytes(), nil
@@ -35,6 +35,6 @@ func (v *RpcCacheValue) UnmarshalBinary(data []byte) error {
 	if err := dec.Decode(&m); err != nil {
 		return err
 	}
-	v.value = cacher.NewVersionBasedCacheValue(m.Value, m.Version)
+	v.Value = cacher.NewVersionBasedCacheValue(m.Value, m.Version)
 	return nil
 }
